@@ -202,8 +202,13 @@
 	}
 
 	@media (max-width: 768px) {
+		.home {
+			padding: 1rem;
+			padding-bottom: 100px;
+		}
+
 		.hero {
-			margin-top: 5vh;
+			margin-top: 3vh;
 		}
 
 		h1 {
@@ -215,11 +220,29 @@
 		}
 
 		.popular {
-			margin-top: 32px;
+			margin-top: 24px;
+		}
+
+		.popular h2 {
+			font-size: 12px;
 		}
 
 		.popular-grid {
 			grid-template-columns: repeat(2, 1fr);
+			gap: 8px;
+		}
+
+		.popular-card {
+			padding: 12px;
+			border-radius: 10px;
+		}
+
+		.popular-label {
+			font-size: 13px;
+		}
+
+		.popular-handle {
+			font-size: 10px;
 		}
 	}
 </style>
