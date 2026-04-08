@@ -3,6 +3,17 @@
 
 	let handle = $state('');
 
+	const popularAccounts = [
+		{ handle: 'photography.bsky.social', label: 'Photography' },
+		{ handle: 'art.bsky.social', label: 'Art' },
+		{ handle: 'nasa.bsky.social', label: 'NASA' },
+		{ handle: 'nature.bsky.social', label: 'Nature' },
+		{ handle: 'nationalgeographic.bsky.social', label: 'NatGeo' },
+		{ handle: 'spacex.bsky.social', label: 'SpaceX' },
+		{ handle: 'smithsonian.bsky.social', label: 'Smithsonian' },
+		{ handle: 'moma.bsky.social', label: 'MoMA' },
+	];
+
 	function parseHandle(input: string): string {
 		let cleaned = input.trim().replace(/^@/, '');
 		const urlMatch = cleaned.match(/bsky\.app\/profile\/([^/?#]+)/);
@@ -36,13 +47,25 @@
 			<button type="submit" disabled={!handle.trim()}>Explore</button>
 		</form>
 	</div>
+
+	<div class="popular">
+		<h2>Popular accounts</h2>
+		<div class="popular-grid">
+			{#each popularAccounts as account}
+				<a href="/mosaic/{encodeURIComponent(account.handle)}" class="popular-card">
+					<span class="popular-label">{account.label}</span>
+					<span class="popular-handle">@{account.handle}</span>
+				</a>
+			{/each}
+		</div>
+	</div>
 </div>
 
 <style>
 	.home {
 		display: flex;
+		flex-direction: column;
 		align-items: center;
-		justify-content: center;
 		min-height: calc(100vh - 64px);
 		padding: 2rem;
 		background: var(--bg);
@@ -54,6 +77,7 @@
 		align-items: center;
 		text-align: center;
 		gap: 12px;
+		margin-top: 10vh;
 	}
 
 	h1 {
@@ -118,5 +142,84 @@
 	button:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	/* Popular accounts */
+	.popular {
+		margin-top: 48px;
+		width: 100%;
+		max-width: 700px;
+	}
+
+	.popular h2 {
+		font-family: 'Geist', sans-serif;
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--fg-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		margin-bottom: 16px;
+		text-align: center;
+	}
+
+	.popular-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 10px;
+	}
+
+	.popular-card {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 16px;
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		text-decoration: none;
+		transition: border-color 0.2s, background 0.2s;
+	}
+
+	.popular-card:hover {
+		border-color: var(--accent-purple);
+		background: var(--bg-muted);
+	}
+
+	.popular-label {
+		font-family: 'Geist', sans-serif;
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--fg);
+	}
+
+	.popular-handle {
+		font-family: 'Geist Mono', monospace;
+		font-size: 11px;
+		color: var(--fg-subtle);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	@media (max-width: 768px) {
+		.hero {
+			margin-top: 5vh;
+		}
+
+		h1 {
+			font-size: 1.8rem;
+		}
+
+		.home-search {
+			flex-direction: column;
+		}
+
+		.popular {
+			margin-top: 32px;
+		}
+
+		.popular-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
 	}
 </style>

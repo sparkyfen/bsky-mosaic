@@ -159,7 +159,7 @@
 				</button>
 				<div class="divider"></div>
 				<button class="setting-row" onclick={() => { resetSettings(); }} type="button">
-					<span class="setting-label">Switch to default</span>
+					<span class="setting-label">Reset to defaults</span>
 					<span class="setting-action accent">Reset</span>
 				</button>
 			</div>
