@@ -581,12 +581,19 @@
 		}
 
 		.profile-spacer {
-			display: none;
+			flex: 1;
 		}
 
-		.follow-btn,
+		.follow-btn {
+			padding: 6px 14px;
+			height: 32px;
+			font-size: 12px;
+		}
+
 		.view-profile-btn {
-			display: none;
+			padding: 6px 12px;
+			height: 32px;
+			font-size: 12px;
 		}
 	}
 </style>
