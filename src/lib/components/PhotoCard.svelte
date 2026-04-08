@@ -27,8 +27,13 @@
 
 	onMount(() => {
 		const observer = new IntersectionObserver(
-			([entry]) => { inView = entry.isIntersecting; },
-			{ rootMargin: '200px' }
+			([entry]) => {
+				if (entry.isIntersecting) {
+					inView = true;
+					observer.disconnect();
+				}
+			},
+			{ rootMargin: '400px' }
 		);
 		observer.observe(cardEl);
 		return () => observer.disconnect();
