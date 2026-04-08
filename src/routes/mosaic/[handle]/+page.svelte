@@ -87,13 +87,12 @@
 			let cursor: string | undefined;
 			let hasMore = true;
 
-			const ppa = $settings.postsPerAccount;
 			while (hasMore) {
-				const result = await getPhotoPosts(agent, handle, cursor, Math.min(ppa, 100));
+				const result = await getPhotoPosts(agent, handle, cursor, 100);
 				for (const p of result.posts) seenUris.add(p.uri);
 				posts = [...posts, ...result.posts];
 				cursor = result.cursor;
-				hasMore = !!cursor && posts.length < ppa;
+				hasMore = !!cursor;
 			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load profile';
@@ -102,7 +101,31 @@
 		}
 	}
 
+	function estimateApiCalls(): number {
+		const d = $settings.crawlDepth;
+		const apl = $settings.accountsPerLevel;
+		// Rough estimate: each level fetches feeds + photo posts for each account
+		// depth 0 = 1 feed scan, depth 1+ = apl accounts * 2 calls each (feed + photos)
+		let total = 1;
+		for (let i = 1; i <= d; i++) {
+			total += apl * 2;
+		}
+		return total;
+	}
+
 	async function startCrawl() {
+		const estimated = estimateApiCalls();
+		if (estimated > 200) {
+			const ok = confirm(
+				`This crawl will make ~${estimated} API calls to Bluesky.\n\n` +
+				`Bluesky rate limits are ~3,000 calls per 5 minutes. ` +
+				`High usage may temporarily block your IP or account.\n\n` +
+				`Depth: ${$settings.crawlDepth}, Accounts/level: ${$settings.accountsPerLevel}, Posts/account: ${$settings.postsPerAccount}\n\n` +
+				`Continue?`
+			);
+			if (!ok) return;
+		}
+
 		crawlActive = true;
 		crawlStatus = `Crawling depth 1...`;
 

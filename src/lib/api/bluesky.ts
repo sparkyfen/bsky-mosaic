@@ -3,7 +3,11 @@ import { BskyAgent } from '@atproto/api';
 const PUBLIC_API = 'https://public.api.bsky.app';
 
 export function createAgent(service: string = PUBLIC_API): BskyAgent {
-	return new BskyAgent({ service });
+	const agent = new BskyAgent({ service });
+	// Note: User-Agent is a forbidden header in browsers and cannot be overridden.
+	// The browser's default User-Agent is sent with all fetch requests.
+	// For server-side usage, the AT Protocol SDK uses its own User-Agent.
+	return agent;
 }
 
 export interface ProfileInfo {
