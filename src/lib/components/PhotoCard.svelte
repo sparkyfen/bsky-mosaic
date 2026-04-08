@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { PhotoImage, ProfileInfo } from '$lib/api/bluesky.js';
 	import { settings } from '$lib/stores/settings.js';
 
@@ -15,6 +16,17 @@
 
 	let revealed = $state(false);
 	let hovered = $state(false);
+	let inView = $state(false);
+	let cardEl: HTMLButtonElement;
+
+	onMount(() => {
+		const observer = new IntersectionObserver(
+			([entry]) => { inView = entry.isIntersecting; },
+			{ rootMargin: '200px' }
+		);
+		observer.observe(cardEl);
+		return () => observer.disconnect();
+	});
 
 	const aspectRatio = $derived(
 		image.aspectRatio
@@ -32,18 +44,23 @@
 
 <button
 	class="photo-card"
+	bind:this={cardEl}
 	onclick={shouldBlur ? undefined : onclick}
 	type="button"
 	class:blurred={shouldBlur}
 	onmouseenter={() => hovered = true}
 	onmouseleave={() => hovered = false}
 >
-	<img
-		src={image.thumb}
-		alt={image.alt || `Photo by ${author.displayName || author.handle}`}
-		loading="lazy"
-		style:aspect-ratio={aspectRatio}
-	/>
+	{#if inView}
+		<img
+			src={image.thumb}
+			alt={image.alt || `Photo by ${author.displayName || author.handle}`}
+			loading="lazy"
+			style:aspect-ratio={aspectRatio}
+		/>
+	{:else}
+		<div class="placeholder" style:aspect-ratio={aspectRatio}></div>
+	{/if}
 
 	{#if shouldBlur}
 		<div class="nsfw-overlay">
@@ -139,6 +156,12 @@
 		width: 100%;
 		display: block;
 		object-fit: cover;
+	}
+
+	.placeholder {
+		width: 100%;
+		background: var(--bg-muted);
+		min-height: 150px;
 	}
 
 	/* NSFW overlay */

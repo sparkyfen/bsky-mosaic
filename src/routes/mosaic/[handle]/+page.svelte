@@ -3,6 +3,7 @@
 	import { createAgent, getProfile, getPhotoPosts, type PhotoPost, type ProfileInfo } from '$lib/api/bluesky.js';
 	import { crawlReposts } from '$lib/api/crawler.js';
 	import { authState, followUser, unfollowUser, getFollowStatus } from '$lib/stores/auth.js';
+	import { settings, updateSetting } from '$lib/stores/settings.js';
 	import Mosaic from '$lib/components/Mosaic.svelte';
 	import PhotoModal from '$lib/components/PhotoModal.svelte';
 	import DepthControl from '$lib/components/DepthControl.svelte';
@@ -18,9 +19,6 @@
 
 	const visiblePosts = $derived(posts.filter(p => !hiddenDids.has(p.author.did)));
 
-	let crawlDepth = $state(1);
-	let accountsPerLevel = $state(50);
-	let postsPerAccount = $state(50);
 	let crawlActive = $state(false);
 	let crawlStatus = $state('');
 
@@ -89,12 +87,13 @@
 			let cursor: string | undefined;
 			let hasMore = true;
 
+			const ppa = $settings.postsPerAccount;
 			while (hasMore) {
-				const result = await getPhotoPosts(agent, handle, cursor, Math.min(postsPerAccount, 100));
+				const result = await getPhotoPosts(agent, handle, cursor, Math.min(ppa, 100));
 				for (const p of result.posts) seenUris.add(p.uri);
 				posts = [...posts, ...result.posts];
 				cursor = result.cursor;
-				hasMore = !!cursor && posts.length < postsPerAccount;
+				hasMore = !!cursor && posts.length < ppa;
 			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load profile';
@@ -111,9 +110,9 @@
 			const agent = createAgent();
 
 			for await (const event of crawlReposts(agent, handle, {
-				maxDepth: Math.min(crawlDepth, 5),
-				accountsPerLevel: Math.min(accountsPerLevel, 200),
-				postsPerAccount: Math.min(postsPerAccount, 500)
+				maxDepth: Math.min($settings.crawlDepth, 5),
+				accountsPerLevel: Math.min($settings.accountsPerLevel, 200),
+				postsPerAccount: Math.min($settings.postsPerAccount, 500)
 			})) {
 				if (event.type === 'photos') {
 					const newPosts = event.posts.filter((p: PhotoPost) => !seenUris.has(p.uri));
@@ -192,14 +191,14 @@
 
 <div class="mosaic-page">
 	<DepthControl
-		depth={crawlDepth}
-		{accountsPerLevel}
-		{postsPerAccount}
+		depth={$settings.crawlDepth}
+		accountsPerLevel={$settings.accountsPerLevel}
+		postsPerAccount={$settings.postsPerAccount}
 		isActive={crawlActive}
 		onCrawl={startCrawl}
-		onDepthChange={(d) => (crawlDepth = d)}
-		onAccountsChange={(a) => (accountsPerLevel = a)}
-		onPostsChange={(p) => (postsPerAccount = p)}
+		onDepthChange={(d) => updateSetting('crawlDepth', d)}
+		onAccountsChange={(a) => updateSetting('accountsPerLevel', a)}
+		onPostsChange={(p) => updateSetting('postsPerAccount', p)}
 	/>
 
 	{#if crawlStatus}

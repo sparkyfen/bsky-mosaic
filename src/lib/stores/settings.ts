@@ -20,6 +20,11 @@ export interface AppSettings {
 	showReposts: boolean;
 	onlyAltText: boolean;
 	minImagesPerPost: number;
+
+	// Crawl
+	crawlDepth: number;
+	accountsPerLevel: number;
+	postsPerAccount: number;
 }
 
 const SETTINGS_KEY = 'bluemosaic_settings';
@@ -37,7 +42,11 @@ const defaults: AppSettings = {
 	nsfwMode: 'blur',
 	showReposts: true,
 	onlyAltText: false,
-	minImagesPerPost: 1
+	minImagesPerPost: 1,
+
+	crawlDepth: 1,
+	accountsPerLevel: 50,
+	postsPerAccount: 50
 };
 
 function loadSettings(): AppSettings {
