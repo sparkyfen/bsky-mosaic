@@ -4,6 +4,7 @@
 	import SearchBar from '$lib/components/SearchBar.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import ScrollToTop from '$lib/components/ScrollToTop.svelte';
+	import TabBar from '$lib/components/TabBar.svelte';
 	import { theme, toggleTheme } from '$lib/stores/theme.js';
 	import { authState, login, logout, restoreSession } from '$lib/stores/auth.js';
 
@@ -154,12 +155,16 @@
 			</div>
 		</div>
 	</header>
+	<div class="mobile-search">
+		<SearchBar />
+	</div>
 	<main>
 		{@render children()}
 	</main>
 	<Footer />
 </div>
 
+<TabBar />
 <ScrollToTop />
 
 {#if showLoginModal}
@@ -697,5 +702,50 @@
 
 	.about-links a:hover {
 		text-decoration: underline;
+	}
+
+	/* Mobile search bar - hidden on desktop, shown below header on mobile */
+	.mobile-search {
+		display: none;
+		padding: 8px 16px;
+		background: var(--header-bg);
+	}
+
+	.mobile-search :global(.search-box) {
+		width: 100%;
+		border-radius: 18px;
+		background: var(--bg-muted);
+	}
+
+	@media (max-width: 768px) {
+		.header {
+			height: 48px;
+			padding: 0 16px;
+		}
+
+		.header-center {
+			display: none;
+		}
+
+		.brand-name {
+			font-size: 16px;
+		}
+
+		.theme-toggle {
+			display: none;
+		}
+
+		.avatar-btn {
+			width: 28px;
+			height: 28px;
+		}
+
+		.mobile-search {
+			display: block;
+		}
+
+		main {
+			padding-bottom: 95px;
+		}
 	}
 </style>

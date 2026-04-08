@@ -52,8 +52,9 @@
 
 	@media (max-width: 768px) {
 		.mosaic {
-			column-gap: 12px;
-			padding: 16px;
+			columns: 2 !important;
+			column-gap: 8px;
+			padding: 8px 16px;
 		}
 	}
 </style>

@@ -55,15 +55,13 @@
 			</svg>
 			<span class="nsfw-title">Sensitive Content</span>
 			<span class="nsfw-subtitle">This image may contain adult content</span>
-			{#if hovered}
-				<button class="nsfw-reveal" onclick={(e) => { e.stopPropagation(); revealed = true; }} type="button">
-					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
-						<circle cx="12" cy="12" r="3" />
-					</svg>
-					<span>Show Content</span>
-				</button>
-			{/if}
+			<button class="nsfw-reveal" class:visible={hovered} onclick={(e) => { e.stopPropagation(); revealed = true; }} type="button">
+				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+					<circle cx="12" cy="12" r="3" />
+				</svg>
+				<span>Show Content</span>
+			</button>
 		</div>
 		<div class="nsfw-badge">18+</div>
 	{/if}
@@ -177,7 +175,7 @@
 	}
 
 	.nsfw-reveal {
-		display: flex;
+		display: none;
 		align-items: center;
 		gap: 6px;
 		padding: 8px 16px;
@@ -191,6 +189,10 @@
 		cursor: pointer;
 		margin-top: 4px;
 		transition: background 0.2s;
+	}
+
+	.nsfw-reveal.visible {
+		display: flex;
 	}
 
 	.nsfw-reveal:hover {
@@ -302,5 +304,31 @@
 		font-size: 13px;
 		font-weight: 600;
 		text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+	}
+
+	@media (max-width: 768px) {
+		.nsfw-reveal {
+			display: flex;
+		}
+
+		.photo-card {
+			margin-bottom: 8px;
+			border-radius: 12px;
+		}
+
+		.overlay {
+			opacity: 1;
+			height: 48px;
+			padding: 8px;
+		}
+
+		.overlay-name {
+			font-size: 11px;
+		}
+
+		.overlay-avatar {
+			width: 24px;
+			height: 24px;
+		}
 	}
 </style>

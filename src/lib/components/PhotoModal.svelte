@@ -12,9 +12,11 @@
 
 	let { post, imageIndex, onclose }: Props = $props();
 
-	const image = $derived(post.images[imageIndex]);
+	let currentImageIndex = $state(imageIndex);
+	const image = $derived(post.images[currentImageIndex]);
 	const rkey = $derived(post.uri.split('/').pop() || '');
 	const bskyUrl = $derived(`https://bsky.app/profile/${post.author.handle}/post/${rkey}`);
+	const hasMultipleImages = $derived(post.images.length > 1);
 
 	let followUri = $state<string | null>(null);
 	let followLoading = $state(false);
@@ -61,6 +63,14 @@
 			onclose();
 		}
 	}
+
+	function sharePost() {
+		if (navigator.share) {
+			navigator.share({ title: `Photo by ${post.author.displayName || post.author.handle}`, url: bskyUrl });
+		} else {
+			window.open(bskyUrl, '_blank');
+		}
+	}
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -68,7 +78,8 @@
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
 <div class="backdrop" onclick={onBackdropClick} role="presentation">
 	<div class="modal" role="dialog" aria-modal="true">
-		<button class="close-btn" onclick={onclose} aria-label="Close">
+		<!-- Desktop close button -->
+		<button class="close-btn desktop-only" onclick={onclose} aria-label="Close">
 			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M18 6 6 18" />
 				<path d="m6 6 12 12" />
@@ -76,7 +87,36 @@
 		</button>
 
 		<div class="modal-content">
-			<img class="full-image" src={image.fullsize} alt={image.alt || ''} />
+			<div class="image-wrapper">
+				<img class="full-image" src={image.fullsize} alt={image.alt || ''} />
+
+				<!-- Mobile nav buttons -->
+				<button class="mobile-nav-btn back-btn mobile-only" onclick={onclose} type="button" aria-label="Back">
+					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="m15 18-6-6 6-6" />
+					</svg>
+				</button>
+				<button class="mobile-nav-btn share-btn mobile-only" onclick={sharePost} type="button" aria-label="Share">
+					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M7 17l9.2-9.2M17 17V7H7" />
+					</svg>
+				</button>
+
+				<!-- Dot indicators for multi-image posts -->
+				{#if hasMultipleImages}
+					<div class="dot-indicators">
+						{#each post.images as _, i}
+							<button
+								class="dot"
+								class:active={i === currentImageIndex}
+								onclick={() => currentImageIndex = i}
+								type="button"
+								aria-label="Image {i + 1}"
+							></button>
+						{/each}
+					</div>
+				{/if}
+			</div>
 
 			<div class="details">
 				<div class="author-row">
@@ -95,7 +135,7 @@
 					</button>
 					{#if $authState.isAuthenticated && post.author.did !== $authState.did}
 						<button
-							class="follow-btn"
+							class="follow-btn desktop-only"
 							class:following={!!followUri}
 							onclick={handleFollow}
 							disabled={followLoading}
@@ -113,7 +153,8 @@
 					{/if}
 				</div>
 
-				<a href={bskyUrl} target="_blank" rel="noopener noreferrer" class="bsky-link">
+				<!-- Desktop: inline link -->
+				<a href={bskyUrl} target="_blank" rel="noopener noreferrer" class="bsky-link desktop-only">
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
 						<polyline points="15 3 21 3 21 9" />
@@ -123,11 +164,35 @@
 				</a>
 
 				{#if post.parentChain.length > 0}
-					<div class="discovery-section">
+					<div class="discovery-section desktop-only">
 						<h3>Discovery Path</h3>
 						<DiscoveryPath chain={post.parentChain} current={post.author} onnavigate={onclose} />
 					</div>
 				{/if}
+
+				<!-- Mobile: full-width action buttons -->
+				<div class="mobile-actions mobile-only">
+					<a href={bskyUrl} target="_blank" rel="noopener noreferrer" class="mobile-action-btn outline">
+						Open in Bluesky
+					</a>
+					{#if $authState.isAuthenticated && post.author.did !== $authState.did}
+						<button
+							class="mobile-action-btn"
+							class:following={!!followUri}
+							onclick={handleFollow}
+							disabled={followLoading}
+							type="button"
+						>
+							{#if followLoading}
+								...
+							{:else if followUri}
+								Following
+							{:else}
+								Follow
+							{/if}
+						</button>
+					{/if}
+				</div>
 			</div>
 		</div>
 	</div>
@@ -183,12 +248,70 @@
 		flex-direction: column;
 	}
 
+	.image-wrapper {
+		position: relative;
+	}
+
 	.full-image {
 		width: 100%;
 		max-height: 60vh;
 		object-fit: contain;
 		background: #000;
 		border-radius: 16px 16px 0 0;
+		display: block;
+	}
+
+	/* Mobile nav buttons on image */
+	.mobile-nav-btn {
+		position: absolute;
+		top: 12px;
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		background: rgba(10, 10, 10, 0.8);
+		color: #ffffff;
+		border: none;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 2;
+	}
+
+	.back-btn {
+		left: 12px;
+	}
+
+	.share-btn {
+		right: 12px;
+	}
+
+	/* Dot indicators */
+	.dot-indicators {
+		position: absolute;
+		bottom: 12px;
+		left: 50%;
+		transform: translateX(-50%);
+		display: flex;
+		gap: 8px;
+		padding: 6px 12px;
+		background: rgba(0, 0, 0, 0.4);
+		border-radius: 12px;
+	}
+
+	.dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--fg-subtle);
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		transition: background 0.2s;
+	}
+
+	.dot.active {
+		background: var(--accent-purple);
 	}
 
 	.details {
@@ -300,6 +423,7 @@
 		letter-spacing: 0.05em;
 	}
 
+	/* Desktop follow button */
 	.follow-btn {
 		font-family: 'JetBrains Mono', monospace;
 		font-size: 14px;
@@ -345,5 +469,98 @@
 	.follow-btn:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+	}
+
+	/* Mobile action buttons */
+	.mobile-actions {
+		display: flex;
+		gap: 10px;
+		margin-top: 16px;
+	}
+
+	.mobile-action-btn {
+		flex: 1;
+		height: 44px;
+		border-radius: 9999px;
+		font-family: 'Geist', sans-serif;
+		font-size: 14px;
+		font-weight: 600;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		text-decoration: none;
+		transition: background 0.2s;
+		background: var(--accent-purple);
+		color: #ffffff;
+		border: none;
+	}
+
+	.mobile-action-btn.outline {
+		background: transparent;
+		border: 1px solid var(--accent-purple);
+		color: var(--accent-purple);
+	}
+
+	.mobile-action-btn.following {
+		background: transparent;
+		border: 1px solid var(--border);
+		color: var(--fg-muted);
+	}
+
+	/* Visibility helpers */
+	.mobile-only {
+		display: none;
+	}
+
+	@media (max-width: 768px) {
+		.desktop-only {
+			display: none !important;
+		}
+
+		.mobile-only {
+			display: flex;
+		}
+
+		.backdrop {
+			padding: 0;
+			background: var(--bg);
+		}
+
+		.modal {
+			border: none;
+			border-radius: 0;
+			max-height: 100vh;
+			height: 100vh;
+		}
+
+		.full-image {
+			border-radius: 0;
+			max-height: 45vh;
+			object-fit: cover;
+		}
+
+		.details {
+			padding: 20px 16px;
+		}
+
+		.avatar {
+			width: 40px;
+			height: 40px;
+		}
+
+		.display-name {
+			font-size: 15px;
+		}
+
+		.handle {
+			font-size: 12px;
+		}
+
+		.author-info {
+			margin-left: 0;
+			padding: 0;
+			border: none;
+		}
 	}
 </style>

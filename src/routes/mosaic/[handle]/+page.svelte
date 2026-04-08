@@ -388,4 +388,52 @@
 	.status.error {
 		color: #FF5C33;
 	}
+
+	@media (max-width: 768px) {
+		.profile-bar {
+			padding: 8px 16px;
+			gap: 10px;
+		}
+
+		.profile-avatar {
+			width: 28px;
+			height: 28px;
+		}
+
+		.profile-info {
+			flex-direction: row;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.profile-name {
+			font-size: 13px;
+		}
+
+		.profile-handle {
+			font-size: 11px;
+		}
+
+		.profile-stats .stat:nth-child(1),
+		.profile-stats .stat:nth-child(2) {
+			display: none;
+		}
+
+		.profile-stats {
+			gap: 0;
+		}
+
+		.stat {
+			font-size: 11px;
+		}
+
+		.profile-spacer {
+			display: none;
+		}
+
+		.follow-btn,
+		.view-profile-btn {
+			display: none;
+		}
+	}
 </style>
