@@ -591,9 +591,7 @@
 		}
 
 		.view-profile-btn {
-			padding: 6px 12px;
-			height: 32px;
-			font-size: 12px;
+			display: none;
 		}
 	}
 </style>
