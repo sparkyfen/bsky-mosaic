@@ -37,12 +37,6 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
-### Docker
-
-```sh
-docker compose up
-```
-
 ### Production Build
 
 ```sh
@@ -95,7 +89,7 @@ All API calls are made client-side — there is no backend proxy. The crawl runs
 - [SvelteKit](https://svelte.dev) with TypeScript
 - [@atproto/api](https://www.npmjs.com/package/@atproto/api) for Bluesky API access
 - [adapter-cloudflare](https://www.npmjs.com/package/@sveltejs/adapter-cloudflare) for Cloudflare Pages deployment
-- Docker for containerized deployment
+- GitHub Actions for CI/CD
 
 ## Legal
 

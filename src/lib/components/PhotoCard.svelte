@@ -110,19 +110,15 @@
 				<span class="dot" class:active={i === currentIndex}></span>
 			{/each}
 		</div>
-		{#if hovered}
-			{#if currentIndex > 0}
-				<!-- svelte-ignore a11y_click_events_have_key_events -->
-				<span class="carousel-arrow left" role="button" tabindex="0" onclick={prev}>
-					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-				</span>
-			{/if}
-			{#if currentIndex < images.length - 1}
-				<!-- svelte-ignore a11y_click_events_have_key_events -->
-				<span class="carousel-arrow right" role="button" tabindex="0" onclick={next}>
-					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-				</span>
-			{/if}
+		{#if currentIndex > 0}
+			<button class="carousel-arrow left" onclick={prev} type="button" aria-label="Previous image">
+				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+			</button>
+		{/if}
+		{#if currentIndex < images.length - 1}
+			<button class="carousel-arrow right" onclick={next} type="button" aria-label="Next image">
+				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+			</button>
 		{/if}
 	{/if}
 
@@ -274,7 +270,14 @@
 		justify-content: center;
 		cursor: pointer;
 		z-index: 3;
-		transition: background 0.15s;
+		transition: background 0.15s, opacity 0.2s;
+		border: none;
+		padding: 0;
+		opacity: 0;
+	}
+
+	.photo-card:hover .carousel-arrow {
+		opacity: 1;
 	}
 
 	.carousel-arrow:hover {
