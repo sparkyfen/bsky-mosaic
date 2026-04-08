@@ -64,6 +64,26 @@
 		}
 	}
 
+	let touchStartX = 0;
+	let touchStartY = 0;
+
+	function handleTouchStart(e: TouchEvent) {
+		touchStartX = e.touches[0].clientX;
+		touchStartY = e.touches[0].clientY;
+	}
+
+	function handleTouchEnd(e: TouchEvent) {
+		if (!hasMultipleImages) return;
+		const dx = e.changedTouches[0].clientX - touchStartX;
+		const dy = e.changedTouches[0].clientY - touchStartY;
+		if (Math.abs(dx) < 30 || Math.abs(dy) > Math.abs(dx)) return;
+		if (dx < 0 && currentImageIndex < post.images.length - 1) {
+			currentImageIndex++;
+		} else if (dx > 0 && currentImageIndex > 0) {
+			currentImageIndex--;
+		}
+	}
+
 	function sharePost() {
 		if (navigator.share) {
 			navigator.share({ title: `Photo by ${post.author.displayName || post.author.handle}`, url: bskyUrl });
@@ -87,7 +107,7 @@
 		</button>
 
 		<div class="modal-content">
-			<div class="image-wrapper">
+			<div class="image-wrapper" ontouchstart={handleTouchStart} ontouchend={handleTouchEnd}>
 				<img class="full-image" src={image.fullsize} alt={image.alt || ''} />
 
 				<!-- Mobile nav buttons -->

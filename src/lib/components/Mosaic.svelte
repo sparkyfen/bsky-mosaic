@@ -30,16 +30,14 @@
 
 <div class="mosaic" style={columnStyle}>
 	{#each filteredPosts as post (post.uri)}
-		{#each post.images as image, idx}
-			<PhotoCard
-				{image}
-				author={post.author}
-				isRepost={post.isRepost}
-				nsfw={post.nsfw}
-				onclick={() => onPhotoClick?.(post, idx)}
-				onhide={(did) => onHideAccount?.(did)}
-			/>
-		{/each}
+		<PhotoCard
+			images={post.images}
+			author={post.author}
+			isRepost={post.isRepost}
+			nsfw={post.nsfw}
+			onclick={(idx) => onPhotoClick?.(post, idx)}
+			onhide={(did) => onHideAccount?.(did)}
+		/>
 	{/each}
 </div>
 

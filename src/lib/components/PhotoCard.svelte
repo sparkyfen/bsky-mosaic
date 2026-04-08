@@ -4,20 +4,26 @@
 	import { settings } from '$lib/stores/settings.js';
 
 	interface Props {
-		image: PhotoImage;
+		images: PhotoImage[];
 		author: ProfileInfo;
 		isRepost?: boolean;
 		nsfw?: boolean;
-		onclick?: () => void;
+		onclick?: (imageIndex: number) => void;
 		onhide?: (did: string) => void;
 	}
 
-	let { image, author, isRepost = false, nsfw = false, onclick, onhide }: Props = $props();
+	let { images, author, isRepost = false, nsfw = false, onclick, onhide }: Props = $props();
 
 	let revealed = $state(false);
 	let hovered = $state(false);
+	let currentIndex = $state(0);
 	let inView = $state(false);
 	let cardEl: HTMLButtonElement;
+	let touchStartX = 0;
+	let touchStartY = 0;
+
+	const image = $derived(images[currentIndex]);
+	const hasMultiple = $derived(images.length > 1);
 
 	onMount(() => {
 		const observer = new IntersectionObserver(
@@ -40,16 +46,47 @@
 
 	const shouldBlur = $derived(nsfw && $settings.nsfwMode === 'blur' && !revealed);
 	const showBadges = $derived($settings.showRepostBadges);
+
+	function handleTouchStart(e: TouchEvent) {
+		touchStartX = e.touches[0].clientX;
+		touchStartY = e.touches[0].clientY;
+	}
+
+	function handleTouchEnd(e: TouchEvent) {
+		if (!hasMultiple) return;
+		const dx = e.changedTouches[0].clientX - touchStartX;
+		const dy = e.changedTouches[0].clientY - touchStartY;
+		if (Math.abs(dx) < 30 || Math.abs(dy) > Math.abs(dx)) return;
+		if (dx < 0 && currentIndex < images.length - 1) {
+			e.preventDefault();
+			currentIndex++;
+		} else if (dx > 0 && currentIndex > 0) {
+			e.preventDefault();
+			currentIndex--;
+		}
+	}
+
+	function prev(e: MouseEvent) {
+		e.stopPropagation();
+		if (currentIndex > 0) currentIndex--;
+	}
+
+	function next(e: MouseEvent) {
+		e.stopPropagation();
+		if (currentIndex < images.length - 1) currentIndex++;
+	}
 </script>
 
 <button
 	class="photo-card"
 	bind:this={cardEl}
-	onclick={shouldBlur ? undefined : onclick}
+	onclick={shouldBlur ? undefined : () => onclick?.(currentIndex)}
 	type="button"
 	class:blurred={shouldBlur}
 	onmouseenter={() => hovered = true}
 	onmouseleave={() => hovered = false}
+	ontouchstart={handleTouchStart}
+	ontouchend={handleTouchEnd}
 >
 	{#if inView}
 		<img
@@ -60,6 +97,28 @@
 		/>
 	{:else}
 		<div class="placeholder" style:aspect-ratio={aspectRatio}></div>
+	{/if}
+
+	{#if hasMultiple && !shouldBlur}
+		<div class="carousel-dots">
+			{#each images as _, i}
+				<span class="dot" class:active={i === currentIndex}></span>
+			{/each}
+		</div>
+		{#if hovered}
+			{#if currentIndex > 0}
+				<!-- svelte-ignore a11y_click_events_have_key_events -->
+				<span class="carousel-arrow left" role="button" tabindex="0" onclick={prev}>
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+				</span>
+			{/if}
+			{#if currentIndex < images.length - 1}
+				<!-- svelte-ignore a11y_click_events_have_key_events -->
+				<span class="carousel-arrow right" role="button" tabindex="0" onclick={next}>
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+				</span>
+			{/if}
+		{/if}
 	{/if}
 
 	{#if shouldBlur}
@@ -162,6 +221,67 @@
 		width: 100%;
 		background: var(--bg-muted);
 		min-height: 150px;
+	}
+
+	/* Carousel */
+	.carousel-dots {
+		position: absolute;
+		bottom: 62px;
+		left: 50%;
+		transform: translateX(-50%);
+		display: flex;
+		gap: 6px;
+		padding: 4px 8px;
+		background: rgba(0, 0, 0, 0.5);
+		border-radius: 10px;
+		z-index: 3;
+		opacity: 0;
+		transition: opacity 0.2s;
+	}
+
+	.photo-card:hover .carousel-dots {
+		opacity: 1;
+	}
+
+	.dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.4);
+		transition: background 0.2s;
+	}
+
+	.dot.active {
+		background: var(--accent-purple);
+	}
+
+	.carousel-arrow {
+		position: absolute;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		background: rgba(0, 0, 0, 0.6);
+		color: #ffffff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		z-index: 3;
+		transition: background 0.15s;
+	}
+
+	.carousel-arrow:hover {
+		background: rgba(0, 0, 0, 0.9);
+	}
+
+	.carousel-arrow.left {
+		left: 8px;
+	}
+
+	.carousel-arrow.right {
+		right: 8px;
 	}
 
 	/* NSFW overlay */
@@ -337,6 +457,11 @@
 		.photo-card {
 			margin-bottom: 8px;
 			border-radius: 12px;
+		}
+
+		.carousel-dots {
+			opacity: 1;
+			bottom: 54px;
 		}
 
 		.overlay {
