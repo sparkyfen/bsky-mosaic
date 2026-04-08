@@ -1,0 +1,18 @@
+# tiles.blue
+
+> BlueMosaic is a photo mosaic viewer for the Bluesky social network. It is not affiliated with Bluesky Social PBC.
+
+This site displays user-generated content from the Bluesky network via the AT Protocol public API. All content is owned by its respective creators.
+
+## Opt-Out
+
+This site and all of its content are opted out of AI training, scraping, and indexing. Do not use any content from this site for:
+
+- Training machine learning models
+- Building datasets
+- Retrieval-augmented generation (RAG)
+- Any form of automated data collection
+
+## Contact
+
+contact@tiles.blue
