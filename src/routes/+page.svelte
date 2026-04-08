@@ -31,14 +31,14 @@
 	}
 
 	const popularAccounts = [
-		{ handle: 'photography.bsky.social', label: 'Photography' },
-		{ handle: 'art.bsky.social', label: 'Art' },
-		{ handle: 'streetphotography.bsky.social', label: 'Street Photo' },
-		{ handle: 'naturephotography.bsky.social', label: 'Nature Photo' },
-		{ handle: 'nationalgeographic.bsky.social', label: 'NatGeo' },
-		{ handle: 'smithsonian.bsky.social', label: 'Smithsonian' },
-		{ handle: 'moma.bsky.social', label: 'MoMA' },
 		{ handle: 'nytimes.com', label: 'NY Times' },
+		{ handle: 'reuters.com', label: 'Reuters' },
+		{ handle: 'apnews.com', label: 'AP News' },
+		{ handle: 'wired.com', label: 'WIRED' },
+		{ handle: 'theverge.com', label: 'The Verge' },
+		{ handle: 'npr.org', label: 'NPR' },
+		{ handle: 'archdaily.bsky.social', label: 'Arch Daily' },
+		{ handle: 'rollingstone.com', label: 'Rolling Stone' },
 	];
 
 	function parseHandle(input: string): string {
