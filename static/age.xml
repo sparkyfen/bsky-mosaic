@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<age xmlns="http://www.agexml.de/schema/age-1.0">
+  <age-declaration>
+    <default-age>18</default-age>
+    <ageblock>
+      <age>18</age>
+      <url-pattern>/*</url-pattern>
+    </ageblock>
+  </age-declaration>
+</age>

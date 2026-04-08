@@ -17,6 +17,14 @@ export interface ProfileInfo {
 	followersCount?: number;
 }
 
+export type ContentLabel = 'sexual' | 'nudity' | 'porn' | 'graphic-media' | 'gore';
+
+const NSFW_LABELS = new Set<string>(['sexual', 'nudity', 'porn', 'graphic-media', 'gore']);
+
+export function isNsfw(labels: string[]): boolean {
+	return labels.some((l) => NSFW_LABELS.has(l));
+}
+
 export interface PhotoPost {
 	uri: string;
 	cid: string;
@@ -25,6 +33,8 @@ export interface PhotoPost {
 	indexedAt: string;
 	parentChain: ProfileInfo[];
 	isRepost: boolean;
+	labels: string[];
+	nsfw: boolean;
 }
 
 export interface PhotoImage {
@@ -68,6 +78,14 @@ export async function getPhotoPosts(
 		const embed = post.embed;
 		const isRepost = item.reason?.$type === 'app.bsky.feed.defs#reasonRepost';
 
+		// Extract content labels
+		const labels: string[] = [];
+		if (post.labels && Array.isArray(post.labels)) {
+			for (const label of post.labels) {
+				if (label.val) labels.push(label.val);
+			}
+		}
+
 		const images: PhotoImage[] = [];
 
 		if (embed?.$type === 'app.bsky.embed.images#view') {
@@ -106,7 +124,9 @@ export async function getPhotoPosts(
 				images,
 				indexedAt: post.indexedAt,
 				parentChain: [],
-				isRepost
+				isRepost,
+				labels,
+				nsfw: isNsfw(labels)
 			});
 		}
 	}

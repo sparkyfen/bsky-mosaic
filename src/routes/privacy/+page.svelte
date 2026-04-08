@@ -32,13 +32,16 @@
 		<li><strong>Bluesky API</strong> — governed by Bluesky's own <a href="https://bsky.social/about/support/privacy-policy" target="_blank" rel="noopener noreferrer">privacy policy</a>.</li>
 	</ul>
 
-	<h2>6. Children's Privacy</h2>
-	<p>BlueMosaic is not directed at children under 13. We do not knowingly collect information from children.</p>
+	<h2>6. Content Filtering Preferences</h2>
+	<p>Your content filtering preferences (e.g., NSFW content visibility) are stored locally in your browser via localStorage. These preferences are never transmitted to any server. Content labels used for filtering are provided by the Bluesky content moderation system.</p>
 
-	<h2>7. Changes to This Policy</h2>
+	<h2>7. Age Requirement and Children's Privacy</h2>
+	<p>BlueMosaic requires users to be at least 18 years of age. The Service is not directed at children under 13 in compliance with the Children's Online Privacy Protection Act (COPPA), nor at minors under 18 due to the potential presence of mature content. We do not knowingly collect information from children or minors. The site is labeled as age-18 under the German Youth Protection Program (age.xml).</p>
+
+	<h2>8. Changes to This Policy</h2>
 	<p>We may update this policy from time to time. Changes will be reflected by the "Last updated" date above.</p>
 
-	<h2>8. Contact</h2>
+	<h2>9. Contact</h2>
 	<p>For privacy-related questions, contact us at <a href="mailto:contact@tiles.blue">contact@tiles.blue</a>.</p>
 </div>
 

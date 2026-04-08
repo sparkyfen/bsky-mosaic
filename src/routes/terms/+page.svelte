@@ -11,10 +11,23 @@
 	<h2>3. User Accounts</h2>
 	<p>You may optionally sign in with your Bluesky account using an App Password. Your credentials are stored locally in your browser and are never transmitted to or stored on BlueMosaic servers. You are responsible for maintaining the security of your App Password.</p>
 
-	<h2>4. Content</h2>
+	<h2>4. Age Requirement</h2>
+	<p>You must be at least 18 years of age to use BlueMosaic. The Service displays user-generated content from the Bluesky network which may include mature or sensitive material. By using the Service, you confirm that you are at least 18 years old. BlueMosaic is labeled as age-18 in accordance with the <a href="https://www.jugendschutzprogramm.de/en/provider/age-xml/">German Youth Protection Program (age.xml)</a>.</p>
+	<p>In compliance with the Children's Online Privacy Protection Act (COPPA), the Service is not directed at children under 13. We do not knowingly collect or solicit personal information from children under 13.</p>
+
+	<h2>5. Content</h2>
 	<p>All content displayed through BlueMosaic is sourced from the Bluesky network and remains the intellectual property of its respective creators. BlueMosaic does not claim ownership of any user-generated content. "Bluesky" and the Bluesky logo are trademarks of Bluesky Social PBC.</p>
 
-	<h2>5. Acceptable Use</h2>
+	<h2>6. Sensitive Content</h2>
+	<p>The Service displays publicly available content from Bluesky, which may include content labeled as sensitive or explicit by the Bluesky content moderation system. By default, such content is blurred and requires an explicit action to view. You may adjust content filtering preferences in Settings. You acknowledge that:</p>
+	<ul>
+		<li>BlueMosaic does not control or moderate the content on Bluesky</li>
+		<li>Content labels are applied by Bluesky's moderation system and individual users</li>
+		<li>Some content may be mislabeled or unlabeled</li>
+		<li>You are responsible for configuring your content filtering preferences appropriately</li>
+	</ul>
+
+	<h2>7. Acceptable Use</h2>
 	<p>You agree not to:</p>
 	<ul>
 		<li>Use the Service to violate any applicable laws or regulations</li>
@@ -23,16 +36,16 @@
 		<li>Interfere with or disrupt the Service or its infrastructure</li>
 	</ul>
 
-	<h2>6. Disclaimer of Warranties</h2>
+	<h2>8. Disclaimer of Warranties</h2>
 	<p>The Service is provided "as is" and "as available" without warranties of any kind, either express or implied. We do not guarantee the accuracy, completeness, or availability of any content displayed through the Service.</p>
 
-	<h2>7. Limitation of Liability</h2>
+	<h2>9. Limitation of Liability</h2>
 	<p>To the maximum extent permitted by law, BlueMosaic and its operators shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service.</p>
 
-	<h2>8. Changes to Terms</h2>
+	<h2>10. Changes to Terms</h2>
 	<p>We reserve the right to modify these terms at any time. Continued use of the Service after changes constitutes acceptance of the modified terms.</p>
 
-	<h2>9. Contact</h2>
+	<h2>11. Contact</h2>
 	<p>For questions about these terms, contact us at <a href="mailto:contact@tiles.blue">contact@tiles.blue</a>.</p>
 </div>
 

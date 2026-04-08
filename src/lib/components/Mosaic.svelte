@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PhotoPost } from '$lib/api/bluesky.js';
+	import { settings } from '$lib/stores/settings.js';
 	import PhotoCard from './PhotoCard.svelte';
 
 	interface Props {
@@ -9,15 +10,32 @@
 	}
 
 	let { posts, onPhotoClick, onHideAccount }: Props = $props();
+
+	const filteredPosts = $derived(
+		posts.filter((p) => {
+			// Hide NSFW posts entirely if mode is 'hide'
+			if (p.nsfw && $settings.nsfwMode === 'hide') return false;
+			// Filter reposts if disabled
+			if (p.isRepost && !$settings.showReposts) return false;
+			// Only show posts with alt text if enabled
+			if ($settings.onlyAltText && !p.images.some((img) => img.alt)) return false;
+			// Minimum images filter
+			if (p.images.length < $settings.minImagesPerPost) return false;
+			return true;
+		})
+	);
+
+	const columnStyle = $derived(`columns: ${$settings.gridColumns} 200px`);
 </script>
 
-<div class="mosaic">
-	{#each posts as post (post.uri)}
+<div class="mosaic" style={columnStyle}>
+	{#each filteredPosts as post (post.uri)}
 		{#each post.images as image, idx}
 			<PhotoCard
 				{image}
 				author={post.author}
 				isRepost={post.isRepost}
+				nsfw={post.nsfw}
 				onclick={() => onPhotoClick?.(post, idx)}
 				onhide={(did) => onHideAccount?.(did)}
 			/>
@@ -27,21 +45,13 @@
 
 <style>
 	.mosaic {
-		columns: 4 280px;
 		column-gap: 16px;
 		padding: 24px;
 		background: var(--mosaic-bg);
 	}
 
-	@media (max-width: 1200px) {
-		.mosaic {
-			columns: 3 240px;
-		}
-	}
-
 	@media (max-width: 768px) {
 		.mosaic {
-			columns: 2 160px;
 			column-gap: 12px;
 			padding: 16px;
 		}
