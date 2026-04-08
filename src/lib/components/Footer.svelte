@@ -27,6 +27,7 @@
 			<a href="https://github.com/sparkyfen/bsky-mosaic/issues" target="_blank" rel="noopener noreferrer">Report a Bug</a>
 			<a href="https://github.com/sparkyfen/bsky-mosaic/issues" target="_blank" rel="noopener noreferrer">Feature Requests</a>
 			<a href="mailto:contact@tiles.blue">Contact</a>
+			<a href="https://bsky.app/profile/tiles.blue" target="_blank" rel="noopener noreferrer">@tiles.blue</a>
 		</div>
 	</div>
 	<div class="footer-divider"></div>

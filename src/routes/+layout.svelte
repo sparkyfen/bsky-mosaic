@@ -232,6 +232,7 @@
 					<p>BlueMosaic does not collect, store, or transmit any personal data. All API requests are made directly from your browser to the Bluesky public API. Login credentials are stored locally in your browser and never sent to our servers.</p>
 				</div>
 				<div class="about-links">
+					<a href="https://bsky.app/profile/tiles.blue" target="_blank" rel="noopener noreferrer">@tiles.blue</a>
 					<a href="https://github.com/sparkyfen/bsky-mosaic" target="_blank" rel="noopener noreferrer">GitHub</a>
 					<a href="/terms">Terms</a>
 					<a href="/privacy">Privacy</a>
