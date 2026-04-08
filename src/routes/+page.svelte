@@ -6,12 +6,12 @@
 	const popularAccounts = [
 		{ handle: 'photography.bsky.social', label: 'Photography' },
 		{ handle: 'art.bsky.social', label: 'Art' },
-		{ handle: 'nasa.bsky.social', label: 'NASA' },
-		{ handle: 'nature.bsky.social', label: 'Nature' },
+		{ handle: 'streetphotography.bsky.social', label: 'Street Photo' },
+		{ handle: 'naturephotography.bsky.social', label: 'Nature Photo' },
 		{ handle: 'nationalgeographic.bsky.social', label: 'NatGeo' },
-		{ handle: 'spacex.bsky.social', label: 'SpaceX' },
 		{ handle: 'smithsonian.bsky.social', label: 'Smithsonian' },
 		{ handle: 'moma.bsky.social', label: 'MoMA' },
+		{ handle: 'nytimes.com', label: 'NY Times' },
 	];
 
 	function parseHandle(input: string): string {
