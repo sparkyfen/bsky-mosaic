@@ -12,17 +12,15 @@
 	let { posts, onPhotoClick, onHideAccount }: Props = $props();
 
 	const filteredPosts = $derived(
-		posts.filter((p) => {
-			// Hide NSFW posts entirely if mode is 'hide'
-			if (p.nsfw && $settings.nsfwMode === 'hide') return false;
-			// Filter reposts if disabled
-			if (p.isRepost && !$settings.showReposts) return false;
-			// Only show posts with alt text if enabled
-			if ($settings.onlyAltText && !p.images.some((img) => img.alt)) return false;
-			// Minimum images filter
-			if (p.images.length < $settings.minImagesPerPost) return false;
-			return true;
-		})
+		posts
+			.filter((p) => {
+				if (p.nsfw && $settings.nsfwMode === 'hide') return false;
+				if (p.isRepost && !$settings.showReposts) return false;
+				if ($settings.onlyAltText && !p.images.some((img) => img.alt)) return false;
+				if (p.images.length < $settings.minImagesPerPost) return false;
+				return true;
+			})
+			.sort((a, b) => new Date(b.indexedAt).getTime() - new Date(a.indexedAt).getTime())
 	);
 
 	const columnStyle = $derived(`columns: ${$settings.gridColumns} 200px`);
