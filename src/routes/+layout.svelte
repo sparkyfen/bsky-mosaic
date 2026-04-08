@@ -58,7 +58,18 @@
 </script>
 
 <svelte:head>
-	<title>BlueMosaic</title>
+	<title>BlueMosaic — Visual Mosaic Explorer for Bluesky</title>
+	<meta name="description" content="Browse, discover, and enjoy Bluesky photo content in a Pinterest-style mosaic. Explore repost chains and find new accounts." />
+	<meta property="og:title" content="BlueMosaic" />
+	<meta property="og:description" content="A visual mosaic explorer for Bluesky photos. Browse, discover, and enjoy content across the ATmosphere." />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://tiles.blue" />
+	<meta property="og:image" content="https://tiles.blue/og-image.png" />
+	<meta property="og:site_name" content="BlueMosaic" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="BlueMosaic" />
+	<meta name="twitter:description" content="A visual mosaic explorer for Bluesky photos." />
+	<meta name="twitter:image" content="https://tiles.blue/og-image.png" />
 </svelte:head>
 
 <div class="app">

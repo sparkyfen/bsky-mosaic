@@ -1,23 +1,11 @@
 <script lang="ts">
-	import { settings, updateSetting, resetSettings, type NsfwMode, type ImageQuality } from '$lib/stores/settings.js';
+	import { settings, updateSetting, resetSettings, type NsfwMode } from '$lib/stores/settings.js';
 	import { theme, toggleTheme } from '$lib/stores/theme.js';
 
 	function cycleNsfwMode() {
 		const modes: NsfwMode[] = ['hide', 'blur', 'show'];
 		const idx = modes.indexOf($settings.nsfwMode);
 		updateSetting('nsfwMode', modes[(idx + 1) % modes.length]);
-	}
-
-	function cycleImageQuality() {
-		const modes: ImageQuality[] = ['low', 'high'];
-		const idx = modes.indexOf($settings.imageQuality);
-		updateSetting('imageQuality', modes[(idx + 1) % modes.length]);
-	}
-
-	function cycleGridColumns() {
-		const options = [2, 3, 4, 5, 6];
-		const idx = options.indexOf($settings.gridColumns);
-		updateSetting('gridColumns', options[(idx + 1) % options.length]);
 	}
 
 	function handleClearCache() {
@@ -53,62 +41,14 @@
 				</button>
 				<div class="divider"></div>
 				<div class="setting-row">
-					<span class="setting-label">Sticky header</span>
-					<label class="toggle">
-						<input type="checkbox" checked={$settings.stickyHeader} onchange={() => updateSetting('stickyHeader', !$settings.stickyHeader)} />
-						<span class="toggle-track"></span>
-					</label>
-				</div>
-				<div class="divider"></div>
-				<div class="setting-row">
 					<span class="setting-label">Show repost badges</span>
 					<label class="toggle">
 						<input type="checkbox" checked={$settings.showRepostBadges} onchange={() => updateSetting('showRepostBadges', !$settings.showRepostBadges)} />
 						<span class="toggle-track"></span>
 					</label>
 				</div>
-				<div class="divider"></div>
-				<button class="setting-row" onclick={cycleGridColumns} type="button">
-					<span class="setting-label">Grid columns</span>
-					<span class="setting-value">{$settings.gridColumns}</span>
-				</button>
-				<div class="divider"></div>
-				<button class="setting-row" onclick={cycleImageQuality} type="button">
-					<span class="setting-label">Image quality</span>
-					<span class="setting-value">{$settings.imageQuality === 'high' ? 'High' : 'Low'}</span>
-				</button>
 			</div>
 
-			<!-- Accessibility -->
-			<div class="section-header">
-				<h2>Accessibility</h2>
-				<p>Motion and visual adjustments</p>
-			</div>
-			<div class="card">
-				<div class="setting-row">
-					<span class="setting-label">Reduce motion</span>
-					<label class="toggle">
-						<input type="checkbox" checked={$settings.reduceMotion} onchange={() => updateSetting('reduceMotion', !$settings.reduceMotion)} />
-						<span class="toggle-track"></span>
-					</label>
-				</div>
-				<div class="divider"></div>
-				<div class="setting-row">
-					<span class="setting-label">High contrast mode</span>
-					<label class="toggle">
-						<input type="checkbox" checked={$settings.highContrast} onchange={() => updateSetting('highContrast', !$settings.highContrast)} />
-						<span class="toggle-track"></span>
-					</label>
-				</div>
-				<div class="divider"></div>
-				<button class="setting-row" onclick={() => updateSetting('showAltText', !$settings.showAltText)} type="button">
-					<span class="setting-label">Show alt text overlay</span>
-					<span class="setting-value" class:muted={!$settings.showAltText}>{$settings.showAltText ? 'On' : 'Off'}</span>
-				</button>
-			</div>
-		</div>
-
-		<div class="column">
 			<!-- Content Filtering -->
 			<div class="section-header">
 				<h2>Content Filtering</h2>
@@ -141,7 +81,9 @@
 					<span class="setting-value">{$settings.minImagesPerPost}</span>
 				</button>
 			</div>
+		</div>
 
+		<div class="column">
 			<!-- Data & Privacy -->
 			<div class="section-header">
 				<h2>Data & Privacy</h2>
@@ -283,7 +225,6 @@
 		color: var(--accent-purple);
 	}
 
-	/* Toggle switch */
 	.toggle {
 		position: relative;
 		display: inline-block;

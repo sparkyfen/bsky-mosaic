@@ -179,15 +179,28 @@ Once registered, point the domain to whichever hosting option you choose:
 
 ## 4. Remaining App Features
 
-From the original plan, still not started:
+### Done
 
-- [ ] **OAuth login** — replace app password flow with proper `@atproto/oauth-client-node` (more secure, no password handling)
-- [ ] **Follows list** — when logged in, show followed accounts as entry points on the home page
-- [ ] **Settings page** — wire up the Settings menu item (default crawl depth, accounts per level, posts per account)
+- [x] **Settings page** — display, content filtering, data & privacy
+- [x] **Infinite scroll** — loads more posts as you scroll
+- [x] **Mobile responsiveness** — tab bar, compact layout, swipe carousels
+- [x] **Favicon** — BlueMosaic cloud icon
+- [x] **Open Graph meta tags** — link previews when sharing
+- [x] **Error boundaries** — graceful handling for API failures
+- [x] **Follows list** — show followed accounts on home page when logged in
+
+### Not started
+
 - [ ] **Deduplication** — if an account is discovered through multiple repost paths, show the shortest path
-- [ ] **Infinite scroll** — load more posts as the user scrolls instead of fetching all up front
-- [ ] **Mobile responsiveness** — test and polish on smaller screens
-- [ ] **Favicon** — replace the default SvelteKit favicon with a BlueMosaic icon
-- [ ] **Open Graph meta tags** — for link previews when sharing
-- [ ] **Error boundaries** — graceful error handling for API failures, rate limits
 - [ ] **Export discovered accounts** — let users export a list of accounts they found
+
+### Settings to wire up later
+
+These settings exist in the store but have no visual effect yet. They were removed from the settings UI to avoid confusion:
+
+- **Sticky header** — make the header fixed on scroll
+- **Reduce motion** — suppress hover animations and transitions
+- **High contrast mode** — increase contrast for accessibility
+- **Show alt text overlay** — display alt text on photo cards
+- **Image quality** — switch between thumb and fullsize in the grid
+- **Grid columns** — user-selectable column count (currently auto)

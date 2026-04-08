@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import type { PhotoImage, ProfileInfo } from '$lib/api/bluesky.js';
 	import { settings } from '$lib/stores/settings.js';
 
@@ -17,27 +16,11 @@
 	let revealed = $state(false);
 	let hovered = $state(false);
 	let currentIndex = $state(0);
-	let inView = $state(false);
-	let cardEl: HTMLButtonElement;
 	let touchStartX = 0;
 	let touchStartY = 0;
 
 	const image = $derived(images[currentIndex]);
 	const hasMultiple = $derived(images.length > 1);
-
-	onMount(() => {
-		const observer = new IntersectionObserver(
-			([entry]) => {
-				if (entry.isIntersecting) {
-					inView = true;
-					observer.disconnect();
-				}
-			},
-			{ rootMargin: '400px' }
-		);
-		observer.observe(cardEl);
-		return () => observer.disconnect();
-	});
 
 	const aspectRatio = $derived(
 		image.aspectRatio
@@ -84,7 +67,6 @@
 
 <button
 	class="photo-card"
-	bind:this={cardEl}
 	onclick={shouldBlur ? undefined : () => onclick?.(currentIndex)}
 	type="button"
 	class:blurred={shouldBlur}
@@ -93,16 +75,12 @@
 	ontouchstart={handleTouchStart}
 	ontouchend={handleTouchEnd}
 >
-	{#if inView}
-		<img
-			src={image.thumb}
-			alt={image.alt || `Photo by ${author.displayName || author.handle}`}
-			loading="lazy"
-			style:aspect-ratio={aspectRatio}
-		/>
-	{:else}
-		<div class="placeholder" style:aspect-ratio={aspectRatio}></div>
-	{/if}
+	<img
+		src={image.thumb}
+		alt={image.alt || `Photo by ${author.displayName || author.handle}`}
+		loading="lazy"
+		style:aspect-ratio={aspectRatio}
+	/>
 
 	{#if hasMultiple && !shouldBlur}
 		<div class="carousel-dots">
@@ -216,12 +194,6 @@
 		width: 100%;
 		display: block;
 		object-fit: cover;
-	}
-
-	.placeholder {
-		width: 100%;
-		background: var(--bg-muted);
-		min-height: 150px;
 	}
 
 	/* Carousel */

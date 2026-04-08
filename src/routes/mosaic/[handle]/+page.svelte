@@ -120,8 +120,12 @@
 			if (newPosts.length > 0) posts = [...posts, ...newPosts];
 			feedCursor = result.cursor;
 			feedDone = !result.cursor;
-		} catch {
-			feedDone = true;
+		} catch (err: any) {
+			if (err?.status === 429) {
+				crawlStatus = 'Rate limited by Bluesky. Wait a moment and scroll to load more.';
+			} else {
+				feedDone = true;
+			}
 		} finally {
 			loadingMore = false;
 		}

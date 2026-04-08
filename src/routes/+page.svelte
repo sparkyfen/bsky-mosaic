@@ -1,7 +1,34 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import { authState, getAuthenticatedAgent } from '$lib/stores/auth.js';
+	import { getFollows, type ProfileInfo } from '$lib/api/bluesky.js';
 
 	let handle = $state('');
+	let follows = $state<ProfileInfo[]>([]);
+	let followsLoading = $state(false);
+
+	$effect(() => {
+		if ($authState.isAuthenticated) {
+			loadFollows();
+		} else {
+			follows = [];
+		}
+	});
+
+	async function loadFollows() {
+		const agent = getAuthenticatedAgent();
+		if (!agent || !$authState.handle) return;
+		followsLoading = true;
+		try {
+			const result = await getFollows(agent, $authState.handle, undefined, 50);
+			follows = result.follows;
+		} catch {
+			follows = [];
+		} finally {
+			followsLoading = false;
+		}
+	}
 
 	const popularAccounts = [
 		{ handle: 'photography.bsky.social', label: 'Photography' },
@@ -47,6 +74,27 @@
 			<button type="submit" disabled={!handle.trim()}>Explore</button>
 		</form>
 	</div>
+
+	{#if follows.length > 0}
+		<div class="follows">
+			<h2>Your follows</h2>
+			<div class="follows-scroll">
+				{#each follows as f}
+					<a href="/mosaic/{encodeURIComponent(f.handle)}" class="follow-card">
+						{#if f.avatar}
+							<img class="follow-avatar" src={f.avatar} alt="" />
+						{:else}
+							<div class="follow-avatar placeholder">
+								{(f.displayName || f.handle).slice(0, 2).toUpperCase()}
+							</div>
+						{/if}
+						<span class="follow-name">{f.displayName || f.handle}</span>
+						<span class="follow-handle">@{f.handle}</span>
+					</a>
+				{/each}
+			</div>
+		</div>
+	{/if}
 
 	<div class="popular">
 		<h2>Popular accounts</h2>
@@ -142,6 +190,96 @@
 	button:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	/* Follows */
+	.follows {
+		margin-top: 32px;
+		width: 100%;
+		max-width: 700px;
+	}
+
+	.follows h2 {
+		font-family: 'Geist', sans-serif;
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--fg-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		margin-bottom: 16px;
+		text-align: center;
+	}
+
+	.follows-scroll {
+		display: flex;
+		gap: 12px;
+		overflow-x: auto;
+		padding-bottom: 8px;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+	}
+
+	.follows-scroll::-webkit-scrollbar {
+		display: none;
+	}
+
+	.follow-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		padding: 12px;
+		min-width: 100px;
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		text-decoration: none;
+		transition: border-color 0.2s;
+		flex-shrink: 0;
+	}
+
+	.follow-card:hover {
+		border-color: var(--accent-purple);
+	}
+
+	.follow-avatar {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		object-fit: cover;
+	}
+
+	.follow-avatar.placeholder {
+		background: var(--bg-muted);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--fg-dim);
+	}
+
+	.follow-name {
+		font-family: 'Geist', sans-serif;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--fg);
+		text-align: center;
+		max-width: 80px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.follow-handle {
+		font-family: 'Geist Mono', monospace;
+		font-size: 10px;
+		color: var(--fg-subtle);
+		max-width: 80px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	/* Popular accounts */
