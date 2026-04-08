@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { settings, updateSetting, exportSettings, type NsfwMode, type ImageQuality } from '$lib/stores/settings.js';
+	import { settings, updateSetting, resetSettings, type NsfwMode, type ImageQuality } from '$lib/stores/settings.js';
 	import { theme, toggleTheme } from '$lib/stores/theme.js';
 
 	function cycleNsfwMode() {
@@ -18,17 +18,6 @@
 		const options = [2, 3, 4, 5, 6];
 		const idx = options.indexOf($settings.gridColumns);
 		updateSetting('gridColumns', options[(idx + 1) % options.length]);
-	}
-
-	function handleExport() {
-		const data = exportSettings();
-		const blob = new Blob([data], { type: 'application/json' });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = 'bluemosaic-settings.json';
-		a.click();
-		URL.revokeObjectURL(url);
 	}
 
 	function handleClearCache() {
@@ -169,9 +158,9 @@
 					<span class="setting-action destructive">Clear</span>
 				</button>
 				<div class="divider"></div>
-				<button class="setting-row" onclick={handleExport} type="button">
-					<span class="setting-label">Export settings</span>
-					<span class="setting-action accent">Export</span>
+				<button class="setting-row" onclick={() => { resetSettings(); }} type="button">
+					<span class="setting-label">Switch to default</span>
+					<span class="setting-action accent">Reset</span>
 				</button>
 			</div>
 		</div>
