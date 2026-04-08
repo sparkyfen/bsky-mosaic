@@ -3,11 +3,19 @@
 
 	let handle = $state('');
 
+	function parseHandle(input: string): string {
+		let cleaned = input.trim().replace(/^@/, '');
+		const urlMatch = cleaned.match(/bsky\.app\/profile\/([^/?#]+)/);
+		if (urlMatch) cleaned = urlMatch[1];
+		if (cleaned && !cleaned.includes('.')) cleaned = `${cleaned}.bsky.social`;
+		return cleaned;
+	}
+
 	function onSubmit(e: Event) {
 		e.preventDefault();
-		const cleaned = handle.trim().replace(/^@/, '');
-		if (cleaned) {
-			goto(`/mosaic/${encodeURIComponent(cleaned)}`);
+		const resolved = parseHandle(handle);
+		if (resolved) {
+			goto(`/mosaic/${encodeURIComponent(resolved)}`);
 		}
 	}
 </script>
