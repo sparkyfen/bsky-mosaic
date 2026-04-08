@@ -21,6 +21,16 @@
 
 	let crawlActive = $state(false);
 	let crawlStatus = $state('');
+	let showCrawlWarning = $state(false);
+
+	const estimatedCalls = $derived((() => {
+		const d = $settings.crawlDepth;
+		const apl = $settings.accountsPerLevel;
+		let total = 1;
+		for (let i = 1; i <= d; i++) total += apl * 2;
+		return total;
+	})());
+	const showWarningHint = $derived(estimatedCalls > 200);
 
 	// Follow state
 	let followUri = $state<string | null>(null);
@@ -140,31 +150,20 @@
 		}
 	}
 
-	function estimateApiCalls(): number {
-		const d = $settings.crawlDepth;
-		const apl = $settings.accountsPerLevel;
-		// Rough estimate: each level fetches feeds + photo posts for each account
-		// depth 0 = 1 feed scan, depth 1+ = apl accounts * 2 calls each (feed + photos)
-		let total = 1;
-		for (let i = 1; i <= d; i++) {
-			total += apl * 2;
+	function handleCrawlClick() {
+		if (showWarningHint && !showCrawlWarning) {
+			showCrawlWarning = true;
+			return;
 		}
-		return total;
+		showCrawlWarning = false;
+		startCrawl();
+	}
+
+	function dismissWarning() {
+		showCrawlWarning = false;
 	}
 
 	async function startCrawl() {
-		const estimated = estimateApiCalls();
-		if (estimated > 200) {
-			const ok = confirm(
-				`This crawl will make ~${estimated} API calls to Bluesky.\n\n` +
-				`Bluesky rate limits are ~3,000 calls per 5 minutes. ` +
-				`High usage may temporarily block your IP or account.\n\n` +
-				`Depth: ${$settings.crawlDepth}, Accounts/level: ${$settings.accountsPerLevel}, Posts/account: ${$settings.postsPerAccount}\n\n` +
-				`Continue?`
-			);
-			if (!ok) return;
-		}
-
 		crawlActive = true;
 		crawlStatus = `Crawling depth 1...`;
 
@@ -259,11 +258,27 @@
 		accountsPerLevel={$settings.accountsPerLevel}
 		postsPerAccount={$settings.postsPerAccount}
 		isActive={crawlActive}
-		onCrawl={startCrawl}
-		onDepthChange={(d) => updateSetting('crawlDepth', d)}
-		onAccountsChange={(a) => updateSetting('accountsPerLevel', a)}
-		onPostsChange={(p) => updateSetting('postsPerAccount', p)}
+		onCrawl={handleCrawlClick}
+		onDepthChange={(d) => { updateSetting('crawlDepth', d); showCrawlWarning = false; }}
+		onAccountsChange={(a) => { updateSetting('accountsPerLevel', a); showCrawlWarning = false; }}
+		onPostsChange={(p) => { updateSetting('postsPerAccount', p); showCrawlWarning = false; }}
 	/>
+
+	{#if showCrawlWarning}
+		<div class="crawl-warning">
+			<div class="warning-content">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+					<path d="M12 9v4" /><path d="M12 17h.01" />
+				</svg>
+				<span>This crawl is larger than usual (~{estimatedCalls} requests). To avoid being temporarily blocked, consider lowering the depth or accounts per level. <a href="https://docs.bsky.app/docs/advanced-guides/rate-limits" target="_blank" rel="noopener noreferrer">Learn more</a></span>
+			</div>
+			<div class="warning-actions">
+				<button class="warning-btn dismiss" onclick={dismissWarning} type="button">Cancel</button>
+				<button class="warning-btn proceed" onclick={() => { showCrawlWarning = false; startCrawl(); }} type="button">Crawl anyway</button>
+			</div>
+		</div>
+	{/if}
 
 	{#if crawlStatus}
 		<div class="crawl-status">{crawlStatus}</div>
@@ -453,6 +468,72 @@
 
 	.status.error {
 		color: #FF5C33;
+	}
+
+	.crawl-warning {
+		margin: 12px 24px;
+		padding: 16px;
+		background: var(--bg-card);
+		border: 1px solid #FF8400;
+		border-radius: 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.warning-content {
+		display: flex;
+		align-items: flex-start;
+		gap: 10px;
+		color: #FF8400;
+		font-family: 'Geist', sans-serif;
+		font-size: 13px;
+		line-height: 1.5;
+	}
+
+	.warning-content svg {
+		flex-shrink: 0;
+		margin-top: 2px;
+	}
+
+	.warning-content a {
+		color: #FF8400;
+		text-decoration: underline;
+	}
+
+	.warning-actions {
+		display: flex;
+		gap: 8px;
+		justify-content: flex-end;
+	}
+
+	.warning-btn {
+		padding: 6px 16px;
+		border-radius: 6px;
+		font-family: 'Geist', sans-serif;
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+		border: none;
+		transition: background 0.2s;
+	}
+
+	.warning-btn.dismiss {
+		background: var(--bg-muted);
+		color: var(--fg-muted);
+	}
+
+	.warning-btn.dismiss:hover {
+		background: var(--border);
+	}
+
+	.warning-btn.proceed {
+		background: #FF8400;
+		color: #111111;
+	}
+
+	.warning-btn.proceed:hover {
+		background: #E07400;
 	}
 
 	.loading-more {
