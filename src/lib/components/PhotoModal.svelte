@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { PhotoPost } from '$lib/api/bluesky.js';
 	import { goto } from '$app/navigation';
 	import { authState, followUser, unfollowUser, getFollowStatus } from '$lib/stores/auth.js';
@@ -11,6 +12,11 @@
 	}
 
 	let { post, imageIndex, onclose }: Props = $props();
+
+	onMount(() => {
+		document.body.style.overflow = 'hidden';
+		return () => { document.body.style.overflow = ''; };
+	});
 
 	let currentImageIndex = $state(imageIndex);
 	const image = $derived(post.images[currentImageIndex]);
@@ -96,7 +102,7 @@
 <svelte:window onkeydown={onKeydown} />
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
-<div class="backdrop" onclick={onBackdropClick} role="presentation">
+<div class="backdrop" onclick={onBackdropClick} ontouchmove={(e) => e.preventDefault()} role="presentation">
 	<div class="modal" role="dialog" aria-modal="true">
 		<!-- Desktop close button -->
 		<button class="close-btn desktop-only" onclick={onclose} aria-label="Close">
@@ -228,6 +234,8 @@
 		justify-content: center;
 		z-index: 100;
 		padding: 2rem;
+		overscroll-behavior: contain;
+		touch-action: none;
 	}
 
 	.modal {
