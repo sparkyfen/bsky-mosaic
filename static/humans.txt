@@ -1,0 +1,23 @@
+/* TEAM */
+
+Developer: Sparky
+Site: https://github.com/sparkyfen
+Contact: contact@tiles.blue
+
+AI Assistant: Claude (Anthropic)
+Site: https://claude.ai
+
+/* SITE */
+
+Last update: 2026-04-08
+Language: English
+Standards: HTML5, CSS3, ES2022
+Framework: SvelteKit
+Hosting: Cloudflare Pages
+API: AT Protocol (Bluesky)
+
+/* THANKS */
+
+Bluesky Social PBC — for the AT Protocol and public API
+Svelte team — for SvelteKit
+Cloudflare — for Pages hosting
