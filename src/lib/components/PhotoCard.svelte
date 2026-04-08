@@ -14,7 +14,6 @@
 	let { images, author, isRepost = false, nsfw = false, onclick, onhide }: Props = $props();
 
 	let revealed = $state(false);
-	let hovered = $state(false);
 	let currentIndex = $state(0);
 	let touchStartX = 0;
 	let touchStartY = 0;
@@ -70,8 +69,6 @@
 	onclick={shouldBlur ? undefined : () => onclick?.(currentIndex)}
 	type="button"
 	class:blurred={shouldBlur}
-	onmouseenter={() => hovered = true}
-	onmouseleave={() => hovered = false}
 	ontouchstart={handleTouchStart}
 	ontouchend={handleTouchEnd}
 >
@@ -110,7 +107,7 @@
 			</svg>
 			<span class="nsfw-title">Sensitive Content</span>
 			<span class="nsfw-subtitle">This image may contain adult content</span>
-			<button class="nsfw-reveal" class:visible={hovered} onclick={(e) => { e.stopPropagation(); revealed = true; }} type="button">
+			<button class="nsfw-reveal" onclick={(e) => { e.stopPropagation(); revealed = true; }} type="button">
 				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
 					<circle cx="12" cy="12" r="3" />
@@ -314,7 +311,7 @@
 		transition: background 0.2s;
 	}
 
-	.nsfw-reveal.visible {
+	.photo-card:hover .nsfw-reveal {
 		display: flex;
 	}
 
