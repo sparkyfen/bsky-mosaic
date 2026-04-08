@@ -73,31 +73,66 @@
 		}
 	}
 
+	let loadingMore = $state(false);
+	let feedCursor = $state<string | undefined>(undefined);
+	let feedDone = $state(false);
+
 	async function loadProfile() {
 		loading = true;
 		error = null;
 		posts = [];
 		seenUris = new Set();
 		hiddenDids = new Set();
+		feedCursor = undefined;
+		feedDone = false;
 
 		try {
 			const agent = createAgent();
 			profile = await getProfile(agent, handle);
 
-			let cursor: string | undefined;
-			let hasMore = true;
-
-			while (hasMore) {
-				const result = await getPhotoPosts(agent, handle, cursor, 100);
-				for (const p of result.posts) seenUris.add(p.uri);
-				posts = [...posts, ...result.posts];
-				cursor = result.cursor;
-				hasMore = !!cursor;
-			}
+			// Load first page, then show immediately
+			const result = await getPhotoPosts(agent, handle, undefined, 50);
+			for (const p of result.posts) seenUris.add(p.uri);
+			posts = result.posts;
+			feedCursor = result.cursor;
+			feedDone = !result.cursor;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load profile';
 		} finally {
 			loading = false;
+		}
+
+		// Continue loading remaining pages in background
+		if (!feedDone) {
+			loadMorePosts();
+		}
+	}
+
+	async function loadMorePosts() {
+		if (loadingMore || feedDone) return;
+		loadingMore = true;
+
+		try {
+			const agent = createAgent();
+			const result = await getPhotoPosts(agent, handle, feedCursor, 100);
+			const newPosts = result.posts.filter(p => !seenUris.has(p.uri));
+			for (const p of newPosts) seenUris.add(p.uri);
+			if (newPosts.length > 0) posts = [...posts, ...newPosts];
+			feedCursor = result.cursor;
+			feedDone = !result.cursor;
+		} catch {
+			feedDone = true;
+		} finally {
+			loadingMore = false;
+		}
+	}
+
+	function handleScroll() {
+		if (feedDone || loadingMore) return;
+		const scrollBottom = window.innerHeight + window.scrollY;
+		const docHeight = document.documentElement.scrollHeight;
+		if (docHeight - scrollBottom < 800) {
+			loadMorePosts();
 		}
 	}
 
@@ -165,6 +200,8 @@
 		selectedImageIndex = imageIndex;
 	}
 </script>
+
+<svelte:window onscroll={handleScroll} />
 
 {#if profile}
 	<div class="profile-bar">
@@ -236,6 +273,9 @@
 		<div class="status">No photos found for this account.</div>
 	{:else}
 		<Mosaic posts={visiblePosts} {onPhotoClick} {onHideAccount} />
+		{#if loadingMore}
+			<div class="status loading-more">Loading more photos...</div>
+		{/if}
 	{/if}
 </div>
 
@@ -409,6 +449,12 @@
 
 	.status.error {
 		color: #FF5C33;
+	}
+
+	.loading-more {
+		padding: 1.5rem;
+		font-size: 0.9rem;
+		color: var(--fg-subtle);
 	}
 
 	@media (max-width: 768px) {
