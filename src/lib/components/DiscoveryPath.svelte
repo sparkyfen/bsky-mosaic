@@ -11,8 +11,7 @@
 	let { chain, current, onnavigate }: Props = $props();
 
 	function navigateTo(handle: string) {
-		onnavigate?.();
-		goto(`/mosaic/${encodeURIComponent(handle)}`);
+		window.open(`/mosaic/${encodeURIComponent(handle)}`, '_blank');
 	}
 </script>
 

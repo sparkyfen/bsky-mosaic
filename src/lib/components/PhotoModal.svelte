@@ -80,7 +80,7 @@
 
 			<div class="details">
 				<div class="author-row">
-					<button class="author-info" type="button" onclick={() => { onclose(); goto(`/mosaic/${encodeURIComponent(post.author.handle)}`); }}>
+					<button class="author-info" type="button" onclick={() => { window.open(`/mosaic/${encodeURIComponent(post.author.handle)}`, '_blank'); }}>
 						<div class="avatar">
 							{#if post.author.avatar}
 								<img src={post.author.avatar} alt="" />
