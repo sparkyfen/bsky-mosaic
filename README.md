@@ -94,7 +94,7 @@ All API calls are made client-side — there is no backend proxy. The crawl runs
 
 - [SvelteKit](https://svelte.dev) with TypeScript
 - [@atproto/api](https://www.npmjs.com/package/@atproto/api) for Bluesky API access
-- [adapter-node](https://www.npmjs.com/package/@sveltejs/adapter-node) for deployment
+- [adapter-cloudflare](https://www.npmjs.com/package/@sveltejs/adapter-cloudflare) for Cloudflare Pages deployment
 - Docker for containerized deployment
 
 ## Legal

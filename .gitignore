@@ -25,3 +25,6 @@ vite.config.ts.timestamp-*
 # Design files
 *.pen
 images/
+
+# IDE
+.idea/
