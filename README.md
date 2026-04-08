@@ -2,6 +2,8 @@
 
 A Pinterest-style photo mosaic viewer for the [Bluesky](https://bsky.social) social network. Browse visual content, discover new accounts through repost chains, and explore the ATmosphere.
 
+![BlueMosaic — Mosaic View](docs/mosaic-main.png)
+
 ## Features
 
 - **Photo Mosaic** — Enter any Bluesky handle and see their photo posts in a masonry grid
@@ -11,6 +13,14 @@ A Pinterest-style photo mosaic viewer for the [Bluesky](https://bsky.social) soc
 - **Not Interested** — Hide photos from specific accounts during a session
 - **Dark/Light Theme** — Toggle between themes, persisted in localStorage
 - **Fully Client-Side** — All API requests go directly from your browser to the Bluesky public API
+
+### Screenshots
+
+| Photo Modal | Avatar Menu |
+|:-----------:|:-----------:|
+| ![Photo Modal](docs/photo-modal.png) | ![Avatar Menu](docs/avatar-menu.png) |
+
+![Full Page with Footer](docs/full-page.png)
 
 ## Getting Started
 
