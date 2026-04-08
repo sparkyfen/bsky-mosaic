@@ -557,14 +557,19 @@
 			flex-direction: row;
 			align-items: center;
 			gap: 6px;
+			min-width: 0;
+			overflow: hidden;
 		}
 
 		.profile-name {
 			font-size: 13px;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 
 		.profile-handle {
-			font-size: 11px;
+			display: none;
 		}
 
 		.profile-stats .stat:nth-child(1),
@@ -585,9 +590,11 @@
 		}
 
 		.follow-btn {
-			padding: 6px 14px;
-			height: 32px;
-			font-size: 12px;
+			padding: 6px 10px;
+			height: 28px;
+			font-size: 11px;
+			white-space: nowrap;
+			flex-shrink: 0;
 		}
 
 		.view-profile-btn {
