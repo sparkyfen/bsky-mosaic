@@ -11,7 +11,7 @@
 		<li>Contact Bluesky directly to have the content removed at its source</li>
 		<li>Once removed from Bluesky, it will no longer appear on BlueMosaic</li>
 	</ol>
-	<p>For questions specific to BlueMosaic's operation, contact us at <a href="mailto:contact@bluemosaic.app">contact@bluemosaic.app</a>.</p>
+	<p>For questions specific to BlueMosaic's operation, contact us at <a href="mailto:contact@tiles.blue">contact@tiles.blue</a>.</p>
 
 	<h2>Trademarks</h2>
 	<p>"Bluesky" and the Bluesky logo are trademarks of Bluesky Social PBC. BlueMosaic is an independent project and is not affiliated with, endorsed by, or sponsored by Bluesky Social PBC.</p>

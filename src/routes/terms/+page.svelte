@@ -33,7 +33,7 @@
 	<p>We reserve the right to modify these terms at any time. Continued use of the Service after changes constitutes acceptance of the modified terms.</p>
 
 	<h2>9. Contact</h2>
-	<p>For questions about these terms, contact us at <a href="mailto:contact@bluemosaic.app">contact@bluemosaic.app</a>.</p>
+	<p>For questions about these terms, contact us at <a href="mailto:contact@tiles.blue">contact@tiles.blue</a>.</p>
 </div>
 
 <style>

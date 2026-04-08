@@ -26,7 +26,7 @@
 			<a href="https://bsky.social/about/support" target="_blank" rel="noopener noreferrer">Help Center</a>
 			<a href="https://github.com/sparkyfen/bsky-mosaic/issues" target="_blank" rel="noopener noreferrer">Report a Bug</a>
 			<a href="https://github.com/sparkyfen/bsky-mosaic/issues" target="_blank" rel="noopener noreferrer">Feature Requests</a>
-			<a href="mailto:contact@bluemosaic.app">Contact</a>
+			<a href="mailto:contact@tiles.blue">Contact</a>
 		</div>
 	</div>
 	<div class="footer-divider"></div>

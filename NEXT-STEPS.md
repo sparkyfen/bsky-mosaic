@@ -2,7 +2,7 @@
 
 ## 1. Domain
 
-### Recommended: `bluemosaic.app`
+### Recommended: `tiles.blue`
 
 Other options considered:
 - `mosaic.blue` — shortest, uses `.blue` TLD
@@ -66,7 +66,7 @@ Once registered, point the domain to whichever hosting option you choose:
    - Add environment variable: `NODE_VERSION` = `20`
    - Deploy
 
-6. Add custom domain in Pages settings → Custom domains → `bluemosaic.app`
+6. Add custom domain in Pages settings → Custom domains → `tiles.blue`
 
 ---
 
@@ -91,7 +91,7 @@ Once registered, point the domain to whichever hosting option you choose:
    - It will use the existing `docker-compose.yml` and `Dockerfile`
 
 4. Configure domain:
-   - Set the domain to `bluemosaic.app`
+   - Set the domain to `tiles.blue`
    - Enable Let's Encrypt for automatic SSL
    - Set up port forwarding on your router (80/443 → Mac Mini)
 
@@ -127,7 +127,7 @@ Once registered, point the domain to whichever hosting option you choose:
 
 5. It auto-detects SvelteKit — click Deploy
 
-6. Add custom domain in project settings → Domains → `bluemosaic.app`
+6. Add custom domain in project settings → Domains → `tiles.blue`
 
 ---
 
@@ -161,7 +161,7 @@ Once registered, point the domain to whichever hosting option you choose:
 
 4. Add custom domain:
    ```sh
-   fly certs add bluemosaic.app
+   fly certs add tiles.blue
    ```
    Then add the CNAME/A records shown to your DNS.
 
@@ -172,7 +172,7 @@ Once registered, point the domain to whichever hosting option you choose:
 | Phase | Hosting | Domain | Effort |
 |-------|---------|--------|--------|
 | **Now** | Coolify on Mac Mini | none (localhost) | Already done |
-| **When ready to share** | Cloudflare Pages | `bluemosaic.app` via Cloudflare Registrar | ~30 min |
+| **When ready to share** | Cloudflare Pages | `tiles.blue` via Cloudflare Registrar | ~30 min |
 | **If you need server features later** | Fly.io or Coolify with public IP | same domain | ~1 hr |
 
 ---

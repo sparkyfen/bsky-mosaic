@@ -39,7 +39,7 @@
 	<p>We may update this policy from time to time. Changes will be reflected by the "Last updated" date above.</p>
 
 	<h2>8. Contact</h2>
-	<p>For privacy-related questions, contact us at <a href="mailto:contact@bluemosaic.app">contact@bluemosaic.app</a>.</p>
+	<p>For privacy-related questions, contact us at <a href="mailto:contact@tiles.blue">contact@tiles.blue</a>.</p>
 </div>
 
 <style>
