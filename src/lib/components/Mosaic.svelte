@@ -23,10 +23,10 @@
 			.sort((a, b) => new Date(b.indexedAt).getTime() - new Date(a.indexedAt).getTime())
 	);
 
-	const columnStyle = $derived(`columns: ${$settings.gridColumns} 200px`);
+
 </script>
 
-<div class="mosaic" style={columnStyle}>
+<div class="mosaic">
 	{#each filteredPosts as post (post.uri)}
 		<PhotoCard
 			images={post.images}
@@ -41,6 +41,7 @@
 
 <style>
 	.mosaic {
+		columns: 4 280px;
 		column-gap: 16px;
 		padding: 24px;
 		background: var(--mosaic-bg);
