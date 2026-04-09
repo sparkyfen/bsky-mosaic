@@ -23,6 +23,18 @@
 	const rkey = $derived(post.uri.split('/').pop() || '');
 	const bskyUrl = $derived(`https://bsky.app/profile/${post.author.handle}/post/${rkey}`);
 	const hasMultipleImages = $derived(post.images.length > 1);
+	const stageStyle = $derived(
+		image.aspectRatio
+			? `aspect-ratio: ${image.aspectRatio.width} / ${image.aspectRatio.height};`
+			: ''
+	);
+
+	let fullImageLoaded = $state(false);
+	$effect(() => {
+		// Reset load state whenever the active image changes
+		void image.fullsize;
+		fullImageLoaded = false;
+	});
 
 	let followUri = $state<string | null>(null);
 	let followLoading = $state(false);
@@ -114,7 +126,16 @@
 
 		<div class="modal-content">
 			<div class="image-wrapper" ontouchstart={handleTouchStart} ontouchend={handleTouchEnd}>
-				<img class="full-image" src={image.fullsize} alt={image.alt || ''} />
+				<div class="image-stage" style={stageStyle}>
+					<img class="thumb-placeholder" src={image.thumb} alt="" aria-hidden="true" />
+					<img
+						class="full-image"
+						class:loaded={fullImageLoaded}
+						src={image.fullsize}
+						alt={image.alt || ''}
+						onload={() => (fullImageLoaded = true)}
+					/>
+				</div>
 
 				<!-- Mobile nav buttons -->
 				<button class="mobile-nav-btn back-btn mobile-only" onclick={onclose} type="button" aria-label="Back">
@@ -278,15 +299,41 @@
 
 	.image-wrapper {
 		position: relative;
+		background: #000;
+		border-radius: 16px 16px 0 0;
+		overflow: hidden;
+	}
+
+	.image-stage {
+		position: relative;
+		width: 100%;
+		max-height: 60vh;
+		min-height: 240px;
+		display: block;
+	}
+
+	.thumb-placeholder,
+	.full-image {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		display: block;
+	}
+
+	.thumb-placeholder {
+		filter: blur(24px);
+		transform: scale(1.08);
 	}
 
 	.full-image {
-		width: 100%;
-		max-height: 60vh;
-		object-fit: contain;
-		background: #000;
-		border-radius: 16px 16px 0 0;
-		display: block;
+		opacity: 0;
+		transition: opacity 0.25s ease-out;
+	}
+
+	.full-image.loaded {
+		opacity: 1;
 	}
 
 	/* Mobile nav buttons on image */
@@ -562,10 +609,13 @@
 			height: 100vh;
 		}
 
-		.full-image {
+		.image-wrapper {
 			border-radius: 0;
+		}
+
+		.image-stage {
 			max-height: 45vh;
-			object-fit: cover;
+			min-height: 200px;
 		}
 
 		.details {
