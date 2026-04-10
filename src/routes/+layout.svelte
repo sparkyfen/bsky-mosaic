@@ -144,7 +144,6 @@
 						{#if $authState.isAuthenticated}
 							<!-- Active account -->
 							<div class="menu-user">
-								<svg class="menu-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
 								{#if $authState.avatar}
 									<img class="menu-user-avatar" src={$authState.avatar} alt="" />
 								{/if}
@@ -810,10 +809,6 @@
 		background: var(--accent-purple);
 		margin-left: 4px;
 		vertical-align: middle;
-	}
-
-	.menu-check {
-		flex-shrink: 0;
 	}
 
 	.account-row {
