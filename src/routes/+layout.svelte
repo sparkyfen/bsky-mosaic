@@ -6,9 +6,10 @@
 	import ScrollToTop from '$lib/components/ScrollToTop.svelte';
 	import TabBar from '$lib/components/TabBar.svelte';
 	import { theme, toggleTheme } from '$lib/stores/theme.js';
-	import { authState, login, logout, restoreSession } from '$lib/stores/auth.js';
+	import { authState, accountsState, login, logout, switchAccount, removeAccount, restoreSession, type StoredAccount } from '$lib/stores/auth.js';
 
 	let showAbout = $state(false);
+	let showManageAccounts = $state(false);
 
 	let { children } = $props();
 
@@ -23,6 +24,13 @@
 	let loginError = $state('');
 	let loginLoading = $state(false);
 
+	// Derived account lists for the dropdown
+	const otherAccounts = $derived(
+		$accountsState.accounts.filter(a => a.did !== $accountsState.activeDid)
+	);
+
+	let switchingDid = $state<string | null>(null);
+
 	function toggleMenu() {
 		showMenu = !showMenu;
 	}
@@ -33,6 +41,7 @@
 
 	function openLogin() {
 		showMenu = false;
+		showManageAccounts = false;
 		showLoginModal = true;
 	}
 
@@ -54,6 +63,22 @@
 	function handleLogout() {
 		logout();
 		showMenu = false;
+	}
+
+	async function handleSwitch(did: string) {
+		switchingDid = did;
+		try {
+			await switchAccount(did);
+			showMenu = false;
+		} catch (err) {
+			console.error('Switch failed:', err);
+		} finally {
+			switchingDid = null;
+		}
+	}
+
+	function handleSignOutAccount(did: string) {
+		removeAccount(did);
 	}
 </script>
 
@@ -117,23 +142,41 @@
 					<div class="menu-backdrop" onclick={closeMenu}></div>
 					<div class="dropdown-menu">
 						{#if $authState.isAuthenticated}
+							<!-- Active account -->
 							<div class="menu-user">
+								<svg class="menu-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
 								{#if $authState.avatar}
 									<img class="menu-user-avatar" src={$authState.avatar} alt="" />
 								{/if}
 								<div class="menu-user-info">
-									<span class="menu-user-name">{$authState.displayName || $authState.handle}</span>
+									<span class="menu-user-name">{$authState.displayName || $authState.handle} <span class="active-dot"></span></span>
 									<span class="menu-user-handle">@{$authState.handle}</span>
 								</div>
 							</div>
+							<!-- Other accounts -->
+							{#each otherAccounts as account (account.did)}
+								<button class="menu-item account-row" onclick={() => handleSwitch(account.did)} type="button" disabled={switchingDid === account.did}>
+									{#if account.avatar}
+										<img class="menu-user-avatar" src={account.avatar} alt="" />
+									{:else}
+										<div class="menu-avatar-placeholder">
+											<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+										</div>
+									{/if}
+									<div class="menu-user-info">
+										<span class="menu-user-name">{account.displayName || account.handle}</span>
+										<span class="menu-user-handle">@{account.handle}</span>
+									</div>
+								</button>
+							{/each}
 							<div class="menu-divider"></div>
-							<button class="menu-item" onclick={handleLogout} type="button">
-								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-									<polyline points="16 17 21 12 16 7" />
-									<line x1="21" x2="9" y1="12" y2="12" />
-								</svg>
-								<span>Sign out</span>
+							<button class="menu-item add-account" onclick={openLogin} type="button">
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /><path d="M12 8v8" /></svg>
+								<span style="color: var(--accent-purple);">Add Account</span>
+							</button>
+							<button class="menu-item" onclick={() => { closeMenu(); showManageAccounts = true; }} type="button">
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+								<span>Manage Accounts</span>
 							</button>
 						{:else}
 							<button class="menu-item" onclick={openLogin} type="button">
@@ -210,6 +253,48 @@
 					{loginLoading ? 'Signing in...' : 'Sign in'}
 				</button>
 			</form>
+		</div>
+	</div>
+{/if}
+
+{#if showManageAccounts}
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
+	<div class="login-backdrop" onclick={(e) => { if (e.target === e.currentTarget) showManageAccounts = false; }} role="presentation">
+		<div class="manage-modal" role="dialog" aria-modal="true">
+			<button class="manage-back" onclick={() => showManageAccounts = false} type="button" aria-label="Back">
+				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+			</button>
+			<div class="manage-header">
+				<h2>Manage Accounts</h2>
+				<p>Manage your linked Bluesky accounts</p>
+			</div>
+			<div class="manage-list">
+				{#each $accountsState.accounts as account (account.did)}
+					<div class="manage-row">
+						<div class="manage-row-left">
+							{#if account.avatar}
+								<img class="manage-avatar" src={account.avatar} alt="" />
+							{:else}
+								<div class="manage-avatar placeholder">
+									<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+								</div>
+							{/if}
+							<div class="manage-row-info">
+								<span class="manage-row-name">
+									{account.displayName || account.handle}
+									{#if account.did === $accountsState.activeDid}
+										<span class="active-badge">Active</span>
+									{/if}
+								</span>
+								<span class="manage-row-handle">@{account.handle}</span>
+							</div>
+						</div>
+						<button class="manage-signout" onclick={() => handleSignOutAccount(account.did)} type="button">Sign out</button>
+					</div>
+				{/each}
+			</div>
+			<button class="manage-add-btn" onclick={openLogin} type="button">+ Add Bluesky Account</button>
+			<p class="manage-footer">Signing out of an account removes it from this list. You can re-add it anytime.</p>
 		</div>
 	</div>
 {/if}
@@ -714,6 +799,207 @@
 
 	.about-links a:hover {
 		text-decoration: underline;
+	}
+
+	/* Active dot indicator */
+	.active-dot {
+		display: inline-block;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--accent-purple);
+		margin-left: 4px;
+		vertical-align: middle;
+	}
+
+	.menu-check {
+		flex-shrink: 0;
+	}
+
+	.account-row {
+		gap: 10px;
+	}
+
+	.menu-avatar-placeholder {
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		background: var(--bg-muted);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--fg-dim);
+		flex-shrink: 0;
+	}
+
+	.add-account {
+		gap: 8px;
+	}
+
+	/* Manage Accounts modal */
+	.manage-modal {
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 16px;
+		padding: 32px;
+		width: 100%;
+		max-width: 480px;
+		position: relative;
+	}
+
+	.manage-back {
+		position: absolute;
+		top: 24px;
+		left: 24px;
+		background: none;
+		border: none;
+		color: var(--fg-muted);
+		cursor: pointer;
+		padding: 4px;
+		border-radius: 6px;
+		display: flex;
+		transition: color 0.2s;
+	}
+
+	.manage-back:hover {
+		color: var(--fg);
+	}
+
+	.manage-header {
+		margin-bottom: 24px;
+		padding-left: 32px;
+	}
+
+	.manage-header h2 {
+		font-family: 'Geist', sans-serif;
+		font-size: 20px;
+		font-weight: 700;
+		color: var(--fg);
+	}
+
+	.manage-header p {
+		font-family: 'Geist', sans-serif;
+		font-size: 13px;
+		color: var(--fg-subtle);
+		margin-top: 2px;
+	}
+
+	.manage-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
+
+	.manage-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 16px 0;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.manage-row:last-child {
+		border-bottom: none;
+	}
+
+	.manage-row-left {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.manage-avatar {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		object-fit: cover;
+		flex-shrink: 0;
+	}
+
+	.manage-avatar.placeholder {
+		background: var(--bg-muted);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--fg-dim);
+	}
+
+	.manage-row-info {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.manage-row-name {
+		font-family: 'Geist', sans-serif;
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--fg);
+	}
+
+	.manage-row-handle {
+		font-family: 'Geist Mono', monospace;
+		font-size: 12px;
+		color: var(--fg-subtle);
+	}
+
+	.active-badge {
+		display: inline-block;
+		font-family: 'Geist', sans-serif;
+		font-size: 11px;
+		font-weight: 600;
+		color: var(--accent-purple);
+		background: color-mix(in srgb, var(--accent-purple) 15%, transparent);
+		border: 1px solid var(--accent-purple);
+		border-radius: 9999px;
+		padding: 1px 8px;
+		margin-left: 6px;
+		vertical-align: middle;
+	}
+
+	.manage-signout {
+		font-family: 'Geist', sans-serif;
+		font-size: 13px;
+		color: #FF5C33;
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 4px 8px;
+		border-radius: 6px;
+		transition: background 0.2s;
+		flex-shrink: 0;
+	}
+
+	.manage-signout:hover {
+		background: color-mix(in srgb, #FF5C33 10%, transparent);
+	}
+
+	.manage-add-btn {
+		width: 100%;
+		padding: 12px;
+		margin-top: 20px;
+		background: var(--accent-purple);
+		color: #ffffff;
+		border: none;
+		border-radius: 9999px;
+		font-family: 'Geist', sans-serif;
+		font-size: 14px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.2s;
+	}
+
+	.manage-add-btn:hover {
+		background: var(--accent-purple-hover);
+	}
+
+	.manage-footer {
+		font-family: 'Geist', sans-serif;
+		font-size: 12px;
+		color: var(--fg-subtle);
+		text-align: center;
+		margin-top: 16px;
+		line-height: 1.4;
 	}
 
 	/* Mobile search bar - hidden on desktop, shown below header on mobile */
