@@ -7,6 +7,7 @@ export interface AuthState {
 	did: string | null;
 	avatar: string | null;
 	displayName: string | null;
+	uwu: boolean;
 }
 
 export interface StoredAccount {
@@ -16,6 +17,7 @@ export interface StoredAccount {
 	avatar: string | null;
 	accessJwt: string;
 	refreshJwt: string;
+	uwu?: boolean;
 }
 
 export interface AccountsState {
@@ -28,7 +30,8 @@ export const authState = writable<AuthState>({
 	handle: null,
 	did: null,
 	avatar: null,
-	displayName: null
+	displayName: null,
+	uwu: false
 });
 
 export const accountsState = writable<AccountsState>({
@@ -41,6 +44,16 @@ const agentCache = new Map<string, BskyAgent>();
 
 const ACCOUNTS_KEY = 'bluemosaic_accounts';
 const LEGACY_SESSION_KEY = 'bluemosaic_session';
+const FURRYLIST_DID = 'did:plc:jdkvwye2lf4jnoji7v47emft'; // @furryli.st
+
+async function checkFurryList(agent: BskyAgent): Promise<boolean> {
+	try {
+		const res = await agent.getProfile({ actor: 'furryli.st' });
+		return !!res.data.viewer?.followedBy;
+	} catch {
+		return false;
+	}
+}
 
 // --- Persistence ---
 
@@ -121,14 +134,15 @@ async function resumeAgent(account: StoredAccount): Promise<BskyAgent> {
 	return agent;
 }
 
-function setActiveAuth(agent: BskyAgent, profile: { did: string; handle: string; avatar?: string; displayName?: string }) {
+function setActiveAuth(agent: BskyAgent, profile: { did: string; handle: string; avatar?: string; displayName?: string; uwu?: boolean }) {
 	authenticatedAgent = agent;
 	authState.set({
 		isAuthenticated: true,
 		handle: profile.handle,
 		did: profile.did,
 		avatar: profile.avatar || null,
-		displayName: profile.displayName || null
+		displayName: profile.displayName || null,
+		uwu: profile.uwu || false
 	});
 }
 
@@ -139,7 +153,8 @@ function clearActiveAuth() {
 		handle: null,
 		did: null,
 		avatar: null,
-		displayName: null
+		displayName: null,
+		uwu: false
 	});
 }
 
@@ -165,19 +180,22 @@ export async function restoreSession(): Promise<boolean> {
 	try {
 		const agent = await resumeAgent(active);
 		const profile = await agent.getProfile({ actor: agent.session!.did });
+		const uwu = await checkFurryList(agent);
 
 		setActiveAuth(agent, {
 			did: profile.data.did,
 			handle: profile.data.handle,
 			avatar: profile.data.avatar,
-			displayName: profile.data.displayName
+			displayName: profile.data.displayName,
+			uwu
 		});
 
 		// Update stored profile info
 		updateStoredAccount(active.did, {
 			handle: profile.data.handle,
 			displayName: profile.data.displayName || null,
-			avatar: profile.data.avatar || null
+			avatar: profile.data.avatar || null,
+			uwu
 		});
 
 		return true;
@@ -197,13 +215,16 @@ export async function login(handle: string, appPassword: string): Promise<void> 
 
 	agentCache.set(did, agent);
 
+	const uwu = await checkFurryList(agent);
+
 	const account: StoredAccount = {
 		did,
 		handle: profile.data.handle,
 		displayName: profile.data.displayName || null,
 		avatar: profile.data.avatar || null,
 		accessJwt: agent.session!.accessJwt,
-		refreshJwt: agent.session!.refreshJwt
+		refreshJwt: agent.session!.refreshJwt,
+		uwu
 	};
 
 	// Add or update in accounts list
@@ -222,7 +243,8 @@ export async function login(handle: string, appPassword: string): Promise<void> 
 		did,
 		handle: profile.data.handle,
 		avatar: profile.data.avatar,
-		displayName: profile.data.displayName
+		displayName: profile.data.displayName,
+		uwu
 	});
 }
 
@@ -242,7 +264,8 @@ export async function switchAccount(did: string): Promise<void> {
 		did: profile.data.did,
 		handle: profile.data.handle,
 		avatar: profile.data.avatar,
-		displayName: profile.data.displayName
+		displayName: profile.data.displayName,
+		uwu: account.uwu
 	});
 
 	// Update stored profile info

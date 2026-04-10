@@ -41,11 +41,15 @@
 				</div>
 			{/if}
 			<div class="account-info">
-				<span class="display-name">{$authState.displayName || $authState.handle}</span>
+				<span class="display-name">{$authState.displayName || $authState.handle}{#if $authState.uwu} 🐾{/if}</span>
 				<span class="handle">@{$authState.handle}</span>
 				<span class="active-label">Active</span>
 			</div>
 		</div>
+
+		{#if $authState.uwu}
+			<div class="uwu-note">🐾 FurryList member · e621 tags enabled</div>
+		{/if}
 
 		<!-- Other Accounts -->
 		{#if otherAccounts.length > 0}
@@ -63,7 +67,7 @@
 						</div>
 					{/if}
 					<div class="account-info">
-						<span class="display-name">{account.displayName || account.handle}</span>
+						<span class="display-name">{account.displayName || account.handle}{#if account.uwu} 🐾{/if}</span>
 						<span class="handle">@{account.handle}</span>
 						<button class="switch-btn" onclick={() => handleSwitch(account.did)} disabled={switchingDid === account.did} type="button">
 							{switchingDid === account.did ? 'Switching...' : 'Switch →'}
@@ -196,6 +200,14 @@
 	.switch-btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	.uwu-note {
+		font-family: 'Geist', sans-serif;
+		font-size: 12px;
+		color: var(--fg-subtle);
+		margin-top: 8px;
+		padding: 8px 0;
 	}
 
 	.actions {

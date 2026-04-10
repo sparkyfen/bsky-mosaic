@@ -34,7 +34,7 @@
 						</div>
 					{/if}
 					<div class="row-info">
-						<span class="row-name">{account.displayName || account.handle}</span>
+						<span class="row-name">{account.displayName || account.handle}{#if account.uwu} 🐾{/if}</span>
 						<span class="row-handle">@{account.handle}</span>
 						{#if account.did === $accountsState.activeDid}
 							<span class="active-label">Active</span>

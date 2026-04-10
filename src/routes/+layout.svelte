@@ -148,7 +148,7 @@
 									<img class="menu-user-avatar" src={$authState.avatar} alt="" />
 								{/if}
 								<div class="menu-user-info">
-									<span class="menu-user-name">{$authState.displayName || $authState.handle} <span class="active-dot"></span></span>
+									<span class="menu-user-name">{$authState.displayName || $authState.handle}{#if $authState.uwu} 🐾{/if} <span class="active-dot"></span></span>
 									<span class="menu-user-handle">@{$authState.handle}</span>
 								</div>
 							</div>
@@ -163,7 +163,7 @@
 										</div>
 									{/if}
 									<div class="menu-user-info">
-										<span class="menu-user-name">{account.displayName || account.handle}</span>
+										<span class="menu-user-name">{account.displayName || account.handle}{#if account.uwu} 🐾{/if}</span>
 										<span class="menu-user-handle">@{account.handle}</span>
 									</div>
 								</button>
@@ -280,7 +280,7 @@
 							{/if}
 							<div class="manage-row-info">
 								<span class="manage-row-name">
-									{account.displayName || account.handle}
+									{account.displayName || account.handle}{#if account.uwu} 🐾{/if}
 									{#if account.did === $accountsState.activeDid}
 										<span class="active-badge">Active</span>
 									{/if}
