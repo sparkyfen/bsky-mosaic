@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { authState, accountsState, logout, switchAccount, type StoredAccount } from '$lib/stores/auth.js';
+	import { showLoginModal } from '$lib/stores/ui.js';
 
 	const otherAccounts = $derived(
 		$accountsState.accounts.filter(a => a.did !== $accountsState.activeDid)
@@ -74,7 +75,7 @@
 
 		<!-- Actions -->
 		<div class="actions">
-			<button class="action-btn add" onclick={() => goto('/profile/manage')} type="button">
+			<button class="action-btn add" onclick={() => $showLoginModal = true} type="button">
 				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /><path d="M12 8v8" /></svg>
 				Add Account
 			</button>

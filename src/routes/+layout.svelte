@@ -7,6 +7,7 @@
 	import TabBar from '$lib/components/TabBar.svelte';
 	import { theme, toggleTheme } from '$lib/stores/theme.js';
 	import { authState, accountsState, login, logout, switchAccount, removeAccount, restoreSession, type StoredAccount } from '$lib/stores/auth.js';
+	import { showLoginModal } from '$lib/stores/ui.js';
 
 	let showAbout = $state(false);
 	let showManageAccounts = $state(false);
@@ -18,7 +19,6 @@
 	});
 
 	let showMenu = $state(false);
-	let showLoginModal = $state(false);
 	let loginHandle = $state('');
 	let loginAppPassword = $state('');
 	let loginError = $state('');
@@ -42,7 +42,7 @@
 	function openLogin() {
 		showMenu = false;
 		showManageAccounts = false;
-		showLoginModal = true;
+		$showLoginModal = true;
 	}
 
 	async function handleLogin() {
@@ -50,7 +50,7 @@
 		loginLoading = true;
 		try {
 			await login(loginHandle, loginAppPassword);
-			showLoginModal = false;
+			$showLoginModal = false;
 			loginHandle = '';
 			loginAppPassword = '';
 		} catch (err) {
@@ -221,11 +221,11 @@
 <TabBar />
 <ScrollToTop />
 
-{#if showLoginModal}
+{#if $showLoginModal}
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
-	<div class="login-backdrop" onclick={(e) => { if (e.target === e.currentTarget) showLoginModal = false; }} role="presentation">
+	<div class="login-backdrop" onclick={(e) => { if (e.target === e.currentTarget) $showLoginModal = false; }} role="presentation">
 		<div class="login-modal" role="dialog" aria-modal="true">
-			<button class="login-close" onclick={() => showLoginModal = false} type="button" aria-label="Close">
+			<button class="login-close" onclick={() => $showLoginModal = false} type="button" aria-label="Close">
 				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M18 6 6 18" /><path d="m6 6 12 12" />
 				</svg>

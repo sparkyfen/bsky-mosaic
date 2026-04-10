@@ -1,16 +1,14 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { accountsState, removeAccount, login } from '$lib/stores/auth.js';
+	import { accountsState, removeAccount } from '$lib/stores/auth.js';
+	import { showLoginModal } from '$lib/stores/ui.js';
 
 	function handleSignOut(did: string) {
 		removeAccount(did);
 	}
 
 	function handleAdd() {
-		// Open login modal by navigating back — the layout controls the login modal.
-		// For now, route to the profile page which has Add Account.
-		// TODO: once login modal can be opened via a store/event, trigger it directly.
-		goto('/profile');
+		$showLoginModal = true;
 	}
 </script>
 
