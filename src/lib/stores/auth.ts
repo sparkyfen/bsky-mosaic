@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 import { BskyAgent } from '@atproto/api';
 
 export interface AuthState {
@@ -9,6 +9,20 @@ export interface AuthState {
 	displayName: string | null;
 }
 
+export interface StoredAccount {
+	did: string;
+	handle: string;
+	displayName: string | null;
+	avatar: string | null;
+	accessJwt: string;
+	refreshJwt: string;
+}
+
+export interface AccountsState {
+	accounts: StoredAccount[];
+	activeDid: string | null;
+}
+
 export const authState = writable<AuthState>({
 	isAuthenticated: false,
 	handle: null,
@@ -17,104 +31,109 @@ export const authState = writable<AuthState>({
 	displayName: null
 });
 
+export const accountsState = writable<AccountsState>({
+	accounts: [],
+	activeDid: null
+});
+
 let authenticatedAgent: BskyAgent | null = null;
+const agentCache = new Map<string, BskyAgent>();
 
-const SESSION_KEY = 'bluemosaic_session';
+const ACCOUNTS_KEY = 'bluemosaic_accounts';
+const LEGACY_SESSION_KEY = 'bluemosaic_session';
 
-interface StoredSession {
-	accessJwt: string;
-	refreshJwt: string;
-	handle: string;
-	did: string;
-}
+// --- Persistence ---
 
-function saveSession(agent: BskyAgent) {
-	if (typeof localStorage === 'undefined' || !agent.session) return;
-	const data: StoredSession = {
-		accessJwt: agent.session.accessJwt,
-		refreshJwt: agent.session.refreshJwt,
-		handle: agent.session.handle,
-		did: agent.session.did
-	};
-	localStorage.setItem(SESSION_KEY, JSON.stringify(data));
-}
+function loadAccounts(): AccountsState {
+	if (typeof localStorage === 'undefined') return { accounts: [], activeDid: null };
 
-function clearSession() {
-	if (typeof localStorage === 'undefined') return;
-	localStorage.removeItem(SESSION_KEY);
-}
+	// Migrate legacy single-session format
+	const legacy = localStorage.getItem(LEGACY_SESSION_KEY);
+	if (legacy) {
+		try {
+			const s = JSON.parse(legacy);
+			const migrated: AccountsState = {
+				accounts: [{
+					did: s.did,
+					handle: s.handle,
+					displayName: null,
+					avatar: null,
+					accessJwt: s.accessJwt,
+					refreshJwt: s.refreshJwt
+				}],
+				activeDid: s.did
+			};
+			localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(migrated));
+			localStorage.removeItem(LEGACY_SESSION_KEY);
+			return migrated;
+		} catch {
+			localStorage.removeItem(LEGACY_SESSION_KEY);
+		}
+	}
 
-function getStoredSession(): StoredSession | null {
-	if (typeof localStorage === 'undefined') return null;
-	const raw = localStorage.getItem(SESSION_KEY);
-	if (!raw) return null;
+	const raw = localStorage.getItem(ACCOUNTS_KEY);
+	if (!raw) return { accounts: [], activeDid: null };
 	try {
 		return JSON.parse(raw);
 	} catch {
-		return null;
+		return { accounts: [], activeDid: null };
 	}
 }
 
-export function getAuthenticatedAgent(): BskyAgent | null {
-	return authenticatedAgent;
+function saveAccounts(state: AccountsState) {
+	if (typeof localStorage === 'undefined') return;
+	localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(state));
 }
 
-export async function restoreSession(): Promise<boolean> {
-	const stored = getStoredSession();
-	if (!stored) return false;
+function updateStoredAccount(did: string, partial: Partial<StoredAccount>) {
+	const state = get(accountsState);
+	const idx = state.accounts.findIndex(a => a.did === did);
+	if (idx === -1) return;
+	state.accounts[idx] = { ...state.accounts[idx], ...partial };
+	accountsState.set(state);
+	saveAccounts(state);
+}
+
+// --- Agent management ---
+
+async function resumeAgent(account: StoredAccount): Promise<BskyAgent> {
+	const cached = agentCache.get(account.did);
+	if (cached?.session) return cached;
 
 	const agent = new BskyAgent({ service: 'https://bsky.social' });
-	try {
-		await agent.resumeSession({
-			accessJwt: stored.accessJwt,
-			refreshJwt: stored.refreshJwt,
-			handle: stored.handle,
-			did: stored.did,
-			active: true
+	await agent.resumeSession({
+		accessJwt: account.accessJwt,
+		refreshJwt: account.refreshJwt,
+		handle: account.handle,
+		did: account.did,
+		active: true
+	});
+	agentCache.set(account.did, agent);
+
+	// Persist refreshed tokens
+	if (agent.session) {
+		updateStoredAccount(account.did, {
+			accessJwt: agent.session.accessJwt,
+			refreshJwt: agent.session.refreshJwt
 		});
-
-		// Refresh profile info
-		const profile = await agent.getProfile({ actor: agent.session!.did });
-
-		authenticatedAgent = agent;
-		// Save updated tokens after resume
-		saveSession(agent);
-
-		authState.set({
-			isAuthenticated: true,
-			handle: profile.data.handle,
-			did: profile.data.did,
-			avatar: profile.data.avatar || null,
-			displayName: profile.data.displayName || null
-		});
-		return true;
-	} catch {
-		clearSession();
-		return false;
 	}
+
+	return agent;
 }
 
-export async function login(handle: string, appPassword: string): Promise<void> {
-	const agent = new BskyAgent({ service: 'https://bsky.social' });
-	await agent.login({ identifier: handle, password: appPassword });
-
-	const profile = await agent.getProfile({ actor: agent.session!.did });
-
+function setActiveAuth(agent: BskyAgent, profile: { did: string; handle: string; avatar?: string; displayName?: string }) {
 	authenticatedAgent = agent;
-	saveSession(agent);
-
 	authState.set({
 		isAuthenticated: true,
-		handle: profile.data.handle,
-		did: profile.data.did,
-		avatar: profile.data.avatar || null,
-		displayName: profile.data.displayName || null
+		handle: profile.handle,
+		did: profile.did,
+		avatar: profile.avatar || null,
+		displayName: profile.displayName || null
 	});
 }
 
-export function logout() {
+function clearActiveAuth() {
 	authenticatedAgent = null;
-	clearSession();
 	authState.set({
 		isAuthenticated: false,
 		handle: null,
@@ -124,10 +143,156 @@ export function logout() {
 	});
 }
 
+// --- Public API ---
+
+export function getAuthenticatedAgent(): BskyAgent | null {
+	return authenticatedAgent;
+}
+
+export function getAccounts(): StoredAccount[] {
+	return get(accountsState).accounts;
+}
+
+export async function restoreSession(): Promise<boolean> {
+	const state = loadAccounts();
+	accountsState.set(state);
+
+	if (!state.activeDid || state.accounts.length === 0) return false;
+
+	const active = state.accounts.find(a => a.did === state.activeDid);
+	if (!active) return false;
+
+	try {
+		const agent = await resumeAgent(active);
+		const profile = await agent.getProfile({ actor: agent.session!.did });
+
+		setActiveAuth(agent, {
+			did: profile.data.did,
+			handle: profile.data.handle,
+			avatar: profile.data.avatar,
+			displayName: profile.data.displayName
+		});
+
+		// Update stored profile info
+		updateStoredAccount(active.did, {
+			handle: profile.data.handle,
+			displayName: profile.data.displayName || null,
+			avatar: profile.data.avatar || null
+		});
+
+		return true;
+	} catch {
+		// Remove broken account
+		removeAccount(active.did);
+		return false;
+	}
+}
+
+export async function login(handle: string, appPassword: string): Promise<void> {
+	const agent = new BskyAgent({ service: 'https://bsky.social' });
+	await agent.login({ identifier: handle, password: appPassword });
+
+	const profile = await agent.getProfile({ actor: agent.session!.did });
+	const did = profile.data.did;
+
+	agentCache.set(did, agent);
+
+	const account: StoredAccount = {
+		did,
+		handle: profile.data.handle,
+		displayName: profile.data.displayName || null,
+		avatar: profile.data.avatar || null,
+		accessJwt: agent.session!.accessJwt,
+		refreshJwt: agent.session!.refreshJwt
+	};
+
+	// Add or update in accounts list
+	const state = get(accountsState);
+	const idx = state.accounts.findIndex(a => a.did === did);
+	if (idx >= 0) {
+		state.accounts[idx] = account;
+	} else {
+		state.accounts.push(account);
+	}
+	state.activeDid = did;
+	accountsState.set(state);
+	saveAccounts(state);
+
+	setActiveAuth(agent, {
+		did,
+		handle: profile.data.handle,
+		avatar: profile.data.avatar,
+		displayName: profile.data.displayName
+	});
+}
+
+export async function switchAccount(did: string): Promise<void> {
+	const state = get(accountsState);
+	const account = state.accounts.find(a => a.did === did);
+	if (!account) throw new Error('Account not found');
+
+	const agent = await resumeAgent(account);
+	const profile = await agent.getProfile({ actor: did });
+
+	state.activeDid = did;
+	accountsState.set(state);
+	saveAccounts(state);
+
+	setActiveAuth(agent, {
+		did: profile.data.did,
+		handle: profile.data.handle,
+		avatar: profile.data.avatar,
+		displayName: profile.data.displayName
+	});
+
+	// Update stored profile info
+	updateStoredAccount(did, {
+		handle: profile.data.handle,
+		displayName: profile.data.displayName || null,
+		avatar: profile.data.avatar || null
+	});
+}
+
+export function removeAccount(did: string) {
+	const state = get(accountsState);
+	state.accounts = state.accounts.filter(a => a.did !== did);
+	agentCache.delete(did);
+
+	if (state.activeDid === did) {
+		if (state.accounts.length > 0) {
+			// Switch to first remaining account (sync — lazy resume on next API call)
+			const next = state.accounts[0];
+			state.activeDid = next.did;
+			accountsState.set(state);
+			saveAccounts(state);
+			// Kick off async switch
+			switchAccount(next.did).catch(() => {
+				clearActiveAuth();
+			});
+		} else {
+			state.activeDid = null;
+			accountsState.set(state);
+			saveAccounts(state);
+			clearActiveAuth();
+		}
+	} else {
+		accountsState.set(state);
+		saveAccounts(state);
+	}
+}
+
+export function logout() {
+	const current = get(authState);
+	if (current.did) {
+		removeAccount(current.did);
+	} else {
+		clearActiveAuth();
+	}
+}
+
 export async function followUser(did: string): Promise<string> {
 	const agent = getAuthenticatedAgent();
 	if (!agent) throw new Error('Not logged in');
-
 	const res = await agent.follow(did);
 	return res.uri;
 }
@@ -135,14 +300,12 @@ export async function followUser(did: string): Promise<string> {
 export async function unfollowUser(followUri: string): Promise<void> {
 	const agent = getAuthenticatedAgent();
 	if (!agent) throw new Error('Not logged in');
-
 	await agent.deleteFollow(followUri);
 }
 
 export async function getFollowStatus(did: string): Promise<string | null> {
 	const agent = getAuthenticatedAgent();
 	if (!agent) return null;
-
 	const res = await agent.getProfile({ actor: did });
 	const viewer = res.data.viewer;
 	return viewer?.following || null;
