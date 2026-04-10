@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { settings, updateSetting, resetSettings, type NsfwMode } from '$lib/stores/settings.js';
+	import { settings, updateSetting, resetSettings, type NsfwMode, type FeedOrder } from '$lib/stores/settings.js';
 	import { theme, toggleTheme } from '$lib/stores/theme.js';
 
 	function cycleNsfwMode() {
@@ -7,6 +7,16 @@
 		const idx = modes.indexOf($settings.nsfwMode);
 		updateSetting('nsfwMode', modes[(idx + 1) % modes.length]);
 	}
+
+	function cycleFeedOrder() {
+		const next: FeedOrder = $settings.feedOrder === 'discovery' ? 'chronological' : 'discovery';
+		updateSetting('feedOrder', next);
+	}
+
+	const feedOrderLabels: Record<FeedOrder, string> = {
+		discovery: 'Discovery',
+		chronological: 'Chronological'
+	};
 
 	function handleClearCache() {
 		if (typeof caches !== 'undefined') {
@@ -55,6 +65,11 @@
 				<p>Control what appears in your mosaic feed</p>
 			</div>
 			<div class="card">
+				<button class="setting-row" onclick={cycleFeedOrder} type="button">
+					<span class="setting-label">Feed order</span>
+					<span class="setting-value">{feedOrderLabels[$settings.feedOrder]}</span>
+				</button>
+				<div class="divider"></div>
 				<button class="setting-row" onclick={cycleNsfwMode} type="button">
 					<span class="setting-label">NSFW content</span>
 					<span class="setting-value" class:muted={$settings.nsfwMode === 'hide'}>{nsfwLabels[$settings.nsfwMode]}</span>

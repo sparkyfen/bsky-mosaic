@@ -1,11 +1,13 @@
 import { writable } from 'svelte/store';
 
 export type NsfwMode = 'hide' | 'blur' | 'show';
+export type FeedOrder = 'discovery' | 'chronological';
 
 export interface AppSettings {
 	// Display
 	stickyHeader: boolean;
 	showRepostBadges: boolean;
+	feedOrder: FeedOrder;
 
 	// Accessibility
 	reduceMotion: boolean;
@@ -29,6 +31,7 @@ const SETTINGS_KEY = 'bluemosaic_settings';
 const defaults: AppSettings = {
 	stickyHeader: false,
 	showRepostBadges: true,
+	feedOrder: 'discovery',
 
 	reduceMotion: false,
 	highContrast: false,

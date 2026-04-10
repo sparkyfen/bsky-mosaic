@@ -18,6 +18,11 @@
 	let selectedImageIndex = $state(0);
 
 	const visiblePosts = $derived(posts.filter(p => !hiddenDids.has(p.author.did)));
+	const sortedPosts = $derived(
+		$settings.feedOrder === 'chronological'
+			? [...visiblePosts].sort((a, b) => (a.indexedAt < b.indexedAt ? 1 : a.indexedAt > b.indexedAt ? -1 : 0))
+			: visiblePosts
+	);
 
 	let crawlActive = $state(false);
 	let crawlStatus = $state('');
@@ -288,10 +293,10 @@
 		<div class="status">Loading photos...</div>
 	{:else if error}
 		<div class="status error">{error}</div>
-	{:else if visiblePosts.length === 0}
+	{:else if sortedPosts.length === 0}
 		<div class="status">No photos found for this account.</div>
 	{:else}
-		<Mosaic posts={visiblePosts} {onPhotoClick} {onHideAccount} />
+		<Mosaic posts={sortedPosts} {onPhotoClick} {onHideAccount} />
 		{#if loadingMore}
 			<div class="status loading-more">Loading more photos...</div>
 		{/if}
