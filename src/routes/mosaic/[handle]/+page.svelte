@@ -109,6 +109,13 @@
 			const agent = getAgent();
 			profile = await getProfile(agent, handle);
 
+			// Respect author's logged-out visibility setting
+			if (profile.requiresAuth && !$authState.isAuthenticated) {
+				error = 'This author has chosen to make their posts visible only to people who are signed in.';
+				loading = false;
+				return;
+			}
+
 			// Load first page, then show immediately
 			const result = await getPhotoPosts(agent, handle, undefined, 50);
 			for (const p of result.posts) seenUris.add(p.uri);

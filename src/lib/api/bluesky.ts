@@ -19,6 +19,7 @@ export interface ProfileInfo {
 	postsCount?: number;
 	followsCount?: number;
 	followersCount?: number;
+	requiresAuth?: boolean;
 }
 
 export type ContentLabel = 'sexual' | 'nudity' | 'porn' | 'graphic-media' | 'gore';
@@ -50,6 +51,8 @@ export interface PhotoImage {
 
 export async function getProfile(agent: BskyAgent, handle: string): Promise<ProfileInfo> {
 	const res = await agent.getProfile({ actor: handle });
+	const requiresAuth = Array.isArray(res.data.labels) &&
+		res.data.labels.some((l: any) => l.val === '!no-unauthenticated');
 	return {
 		did: res.data.did,
 		handle: res.data.handle,
@@ -58,7 +61,8 @@ export async function getProfile(agent: BskyAgent, handle: string): Promise<Prof
 		description: res.data.description,
 		postsCount: res.data.postsCount,
 		followsCount: res.data.followsCount,
-		followersCount: res.data.followersCount
+		followersCount: res.data.followersCount,
+		requiresAuth
 	};
 }
 
