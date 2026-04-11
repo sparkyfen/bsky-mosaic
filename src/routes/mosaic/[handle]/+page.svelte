@@ -18,6 +18,7 @@
 	let hiddenDids = $state(new Set<string>());
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	let authRequired = $state(false);
 	let selectedPost = $state<PhotoPost | null>(null);
 	let selectedImageIndex = $state(0);
 
@@ -99,6 +100,7 @@
 	async function loadProfile() {
 		loading = true;
 		error = null;
+		authRequired = false;
 		posts = [];
 		seenUris = new Set();
 		hiddenDids = new Set();
@@ -111,6 +113,7 @@
 
 			// Respect author's logged-out visibility setting
 			if (profile.requiresAuth && !$authState.isAuthenticated) {
+				authRequired = true;
 				error = 'This author has chosen to make their posts visible only to people who are signed in.';
 				loading = false;
 				return;
@@ -269,6 +272,7 @@
 {/if}
 
 <div class="mosaic-page">
+	{#if !authRequired}
 	<DepthControl
 		depth={$settings.crawlDepth}
 		accountsPerLevel={$settings.accountsPerLevel}
@@ -294,6 +298,7 @@
 				<button class="warning-btn proceed" onclick={() => { showCrawlWarning = false; startCrawl(); }} type="button">Crawl anyway</button>
 			</div>
 		</div>
+	{/if}
 	{/if}
 
 	{#if crawlStatus}
