@@ -272,7 +272,7 @@
 {/if}
 
 <div class="mosaic-page">
-	{#if !authRequired}
+	{#if !loading && !authRequired}
 	<DepthControl
 		depth={$settings.crawlDepth}
 		accountsPerLevel={$settings.accountsPerLevel}
