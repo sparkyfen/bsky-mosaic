@@ -54,8 +54,11 @@
 		return n.toLocaleString();
 	}
 
+	// Reload when handle changes, or when auth state changes while blocked by auth gate
 	$effect(() => {
 		handle;
+		const authed = $authState.isAuthenticated;
+		if (authRequired && !authed) return; // still blocked, don't re-fetch
 		loadProfile();
 	});
 
