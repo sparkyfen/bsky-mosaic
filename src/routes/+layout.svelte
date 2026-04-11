@@ -7,7 +7,7 @@
 	import TabBar from '$lib/components/TabBar.svelte';
 	import { theme, toggleTheme } from '$lib/stores/theme.js';
 	import { authState, accountsState, login, logout, switchAccount, removeAccount, restoreSession, type StoredAccount } from '$lib/stores/auth.js';
-	import { showLoginModal } from '$lib/stores/ui.js';
+	import { showLoginModal, sessionReady } from '$lib/stores/ui.js';
 	import { updateSetting } from '$lib/stores/settings.js';
 
 	let showAbout = $state(false);
@@ -15,8 +15,9 @@
 
 	let { children } = $props();
 
-	onMount(() => {
-		restoreSession();
+	onMount(async () => {
+		await restoreSession();
+		$sessionReady = true;
 	});
 
 	// Force nsfwMode to 'hide' when authenticated but adult content is restricted

@@ -3,6 +3,7 @@
 	import { createAgent, getProfile, getPhotoPosts, type PhotoPost, type ProfileInfo } from '$lib/api/bluesky.js';
 	import { crawlReposts } from '$lib/api/crawler.js';
 	import { authState, followUser, unfollowUser, getFollowStatus, getAuthenticatedAgent } from '$lib/stores/auth.js';
+	import { sessionReady } from '$lib/stores/ui.js';
 
 	function getAgent() {
 		return getAuthenticatedAgent() || createAgent();
@@ -54,11 +55,10 @@
 		return n.toLocaleString();
 	}
 
-	// Reload when handle changes, or when auth state changes while blocked by auth gate
+	// Wait for session restore before loading, then reload on handle or auth changes
 	$effect(() => {
 		handle;
-		const authed = $authState.isAuthenticated;
-		if (authRequired && !authed) return; // still blocked, don't re-fetch
+		if (!$sessionReady) return; // wait for session restore to complete
 		loadProfile();
 	});
 
