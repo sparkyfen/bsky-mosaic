@@ -24,7 +24,7 @@ export interface ProfileInfo {
 
 export type ContentLabel = 'sexual' | 'nudity' | 'porn' | 'graphic-media' | 'gore';
 
-const NSFW_LABELS = new Set<string>(['sexual', 'nudity', 'porn', 'graphic-media', 'gore']);
+const NSFW_LABELS = new Set<string>(['sexual', 'sexual-figurative', 'nudity', 'porn', 'graphic-media', 'gore']);
 
 export function isNsfw(labels: string[]): boolean {
 	return labels.some((l) => NSFW_LABELS.has(l));
