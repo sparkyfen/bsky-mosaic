@@ -66,10 +66,14 @@ async function checkContentPrefs(agent: BskyAgent): Promise<{ adultContentEnable
 		const prefs = await agent.getPreferences();
 		const adultContentEnabled = prefs.moderationPrefs.adultContentEnabled;
 		const birthDate = prefs.birthDate;
+		const declaredAge = prefs.declaredAge;
 		let ageVerified = false;
 		if (birthDate) {
 			const ageMs = Date.now() - birthDate.getTime();
 			ageVerified = ageMs / (365.25 * 24 * 60 * 60 * 1000) >= 18;
+		} else if (declaredAge?.isOverAge18) {
+			// Fallback: Bluesky may store age declaration without raw birth date
+			ageVerified = true;
 		}
 		// Defensive: if Bluesky says adult content enabled but birth date says minor, restrict
 		if (adultContentEnabled && birthDate && !ageVerified) {
