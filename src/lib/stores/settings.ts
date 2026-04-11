@@ -37,7 +37,7 @@ const defaults: AppSettings = {
 	highContrast: false,
 	showAltText: false,
 
-	nsfwMode: 'blur',
+	nsfwMode: 'hide',
 	showReposts: true,
 	onlyAltText: false,
 	minImagesPerPost: 1,

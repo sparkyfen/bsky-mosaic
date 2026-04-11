@@ -8,6 +8,7 @@
 	import { theme, toggleTheme } from '$lib/stores/theme.js';
 	import { authState, accountsState, login, logout, switchAccount, removeAccount, restoreSession, type StoredAccount } from '$lib/stores/auth.js';
 	import { showLoginModal } from '$lib/stores/ui.js';
+	import { updateSetting } from '$lib/stores/settings.js';
 
 	let showAbout = $state(false);
 	let showManageAccounts = $state(false);
@@ -16,6 +17,13 @@
 
 	onMount(() => {
 		restoreSession();
+	});
+
+	// Force nsfwMode to 'hide' when adult content is restricted
+	$effect(() => {
+		if (!$authState.adultContentEnabled) {
+			updateSetting('nsfwMode', 'hide');
+		}
 	});
 
 	let showMenu = $state(false);

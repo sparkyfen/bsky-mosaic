@@ -1,8 +1,12 @@
 <script lang="ts">
 	import { settings, updateSetting, resetSettings, type NsfwMode, type FeedOrder } from '$lib/stores/settings.js';
 	import { theme, toggleTheme } from '$lib/stores/theme.js';
+	import { authState } from '$lib/stores/auth.js';
+
+	const nsfwLocked = $derived(!$authState.adultContentEnabled);
 
 	function cycleNsfwMode() {
+		if (nsfwLocked) return;
 		const modes: NsfwMode[] = ['hide', 'blur', 'show'];
 		const idx = modes.indexOf($settings.nsfwMode);
 		updateSetting('nsfwMode', modes[(idx + 1) % modes.length]);
@@ -70,10 +74,13 @@
 					<span class="setting-value">{feedOrderLabels[$settings.feedOrder]}</span>
 				</button>
 				<div class="divider"></div>
-				<button class="setting-row" onclick={cycleNsfwMode} type="button">
+				<button class="setting-row" class:locked={nsfwLocked} onclick={cycleNsfwMode} type="button" disabled={nsfwLocked}>
 					<span class="setting-label">NSFW content</span>
-					<span class="setting-value" class:muted={$settings.nsfwMode === 'hide'}>{nsfwLabels[$settings.nsfwMode]}</span>
+					<span class="setting-value" class:muted={$settings.nsfwMode === 'hide'}>{nsfwLocked ? 'Hide all' : nsfwLabels[$settings.nsfwMode]}</span>
 				</button>
+				{#if nsfwLocked}
+					<p class="setting-note">Adult content is restricted by your Bluesky account settings.</p>
+				{/if}
 				<div class="divider"></div>
 				<div class="setting-row">
 					<span class="setting-label">Show reposts in grid</span>
@@ -224,6 +231,19 @@
 
 	.setting-value.muted {
 		color: var(--fg-subtle);
+	}
+
+	.setting-row.locked {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.setting-note {
+		font-family: 'Geist', sans-serif;
+		font-size: 12px;
+		color: var(--fg-subtle);
+		line-height: 1.4;
+		margin-top: -8px;
 	}
 
 	.setting-action {

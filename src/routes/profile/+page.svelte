@@ -2,9 +2,14 @@
 	import { goto } from '$app/navigation';
 	import { authState, accountsState, logout, switchAccount, type StoredAccount } from '$lib/stores/auth.js';
 	import { showLoginModal } from '$lib/stores/ui.js';
+	import { settings } from '$lib/stores/settings.js';
 
 	const otherAccounts = $derived(
 		$accountsState.accounts.filter(a => a.did !== $accountsState.activeDid)
+	);
+
+	const e621Enabled = $derived(
+		$authState.uwu && $authState.adultContentEnabled && $authState.ageVerified && $settings.nsfwMode === 'show'
 	);
 
 	let switchingDid = $state<string | null>(null);
@@ -48,7 +53,7 @@
 		</div>
 
 		{#if $authState.uwu}
-			<div class="uwu-note">🐾 FurryList member · e621 tags enabled</div>
+			<div class="uwu-note">🐾 FurryList member{#if e621Enabled} · e621 tags enabled{/if}</div>
 		{/if}
 
 		<!-- Other Accounts -->

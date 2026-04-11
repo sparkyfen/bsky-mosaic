@@ -8,6 +8,8 @@ export interface AuthState {
 	avatar: string | null;
 	displayName: string | null;
 	uwu: boolean;
+	adultContentEnabled: boolean;
+	ageVerified: boolean;
 }
 
 export interface StoredAccount {
@@ -18,6 +20,8 @@ export interface StoredAccount {
 	accessJwt: string;
 	refreshJwt: string;
 	uwu?: boolean;
+	adultContentEnabled?: boolean;
+	ageVerified?: boolean;
 }
 
 export interface AccountsState {
@@ -31,7 +35,9 @@ export const authState = writable<AuthState>({
 	did: null,
 	avatar: null,
 	displayName: null,
-	uwu: false
+	uwu: false,
+	adultContentEnabled: false,
+	ageVerified: false
 });
 
 export const accountsState = writable<AccountsState>({
@@ -52,6 +58,26 @@ async function checkFurryList(agent: BskyAgent): Promise<boolean> {
 		return !!res.data.viewer?.followedBy;
 	} catch {
 		return false;
+	}
+}
+
+async function checkContentPrefs(agent: BskyAgent): Promise<{ adultContentEnabled: boolean; ageVerified: boolean }> {
+	try {
+		const prefs = await agent.getPreferences();
+		const adultContentEnabled = prefs.moderationPrefs.adultContentEnabled;
+		const birthDate = prefs.birthDate;
+		let ageVerified = false;
+		if (birthDate) {
+			const ageMs = Date.now() - birthDate.getTime();
+			ageVerified = ageMs / (365.25 * 24 * 60 * 60 * 1000) >= 18;
+		}
+		// Defensive: if Bluesky says adult content enabled but birth date says minor, restrict
+		if (adultContentEnabled && birthDate && !ageVerified) {
+			return { adultContentEnabled: false, ageVerified: false };
+		}
+		return { adultContentEnabled, ageVerified };
+	} catch {
+		return { adultContentEnabled: false, ageVerified: false };
 	}
 }
 
@@ -134,7 +160,7 @@ async function resumeAgent(account: StoredAccount): Promise<BskyAgent> {
 	return agent;
 }
 
-function setActiveAuth(agent: BskyAgent, profile: { did: string; handle: string; avatar?: string; displayName?: string; uwu?: boolean }) {
+function setActiveAuth(agent: BskyAgent, profile: { did: string; handle: string; avatar?: string; displayName?: string; uwu?: boolean; adultContentEnabled?: boolean; ageVerified?: boolean }) {
 	authenticatedAgent = agent;
 	authState.set({
 		isAuthenticated: true,
@@ -142,7 +168,9 @@ function setActiveAuth(agent: BskyAgent, profile: { did: string; handle: string;
 		did: profile.did,
 		avatar: profile.avatar || null,
 		displayName: profile.displayName || null,
-		uwu: profile.uwu || false
+		uwu: profile.uwu || false,
+		adultContentEnabled: profile.adultContentEnabled || false,
+		ageVerified: profile.ageVerified || false
 	});
 }
 
@@ -154,7 +182,9 @@ function clearActiveAuth() {
 		did: null,
 		avatar: null,
 		displayName: null,
-		uwu: false
+		uwu: false,
+		adultContentEnabled: false,
+		ageVerified: false
 	});
 }
 
@@ -181,13 +211,15 @@ export async function restoreSession(): Promise<boolean> {
 		const agent = await resumeAgent(active);
 		const profile = await agent.getProfile({ actor: agent.session!.did });
 		const uwu = await checkFurryList(agent);
+		const contentPrefs = await checkContentPrefs(agent);
 
 		setActiveAuth(agent, {
 			did: profile.data.did,
 			handle: profile.data.handle,
 			avatar: profile.data.avatar,
 			displayName: profile.data.displayName,
-			uwu
+			uwu,
+			...contentPrefs
 		});
 
 		// Update stored profile info
@@ -195,7 +227,8 @@ export async function restoreSession(): Promise<boolean> {
 			handle: profile.data.handle,
 			displayName: profile.data.displayName || null,
 			avatar: profile.data.avatar || null,
-			uwu
+			uwu,
+			...contentPrefs
 		});
 
 		return true;
@@ -216,6 +249,7 @@ export async function login(handle: string, appPassword: string): Promise<void> 
 	agentCache.set(did, agent);
 
 	const uwu = await checkFurryList(agent);
+	const contentPrefs = await checkContentPrefs(agent);
 
 	const account: StoredAccount = {
 		did,
@@ -224,7 +258,8 @@ export async function login(handle: string, appPassword: string): Promise<void> 
 		avatar: profile.data.avatar || null,
 		accessJwt: agent.session!.accessJwt,
 		refreshJwt: agent.session!.refreshJwt,
-		uwu
+		uwu,
+		...contentPrefs
 	};
 
 	// Add or update in accounts list
@@ -244,7 +279,8 @@ export async function login(handle: string, appPassword: string): Promise<void> 
 		handle: profile.data.handle,
 		avatar: profile.data.avatar,
 		displayName: profile.data.displayName,
-		uwu
+		uwu,
+		...contentPrefs
 	});
 }
 
@@ -265,7 +301,9 @@ export async function switchAccount(did: string): Promise<void> {
 		handle: profile.data.handle,
 		avatar: profile.data.avatar,
 		displayName: profile.data.displayName,
-		uwu: account.uwu
+		uwu: account.uwu,
+		adultContentEnabled: account.adultContentEnabled,
+		ageVerified: account.ageVerified
 	});
 
 	// Update stored profile info
