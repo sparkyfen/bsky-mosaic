@@ -79,6 +79,10 @@
 	function onKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
 			onclose();
+		} else if (e.key === 'ArrowLeft' && hasMultipleImages && currentImageIndex > 0) {
+			currentImageIndex--;
+		} else if (e.key === 'ArrowRight' && hasMultipleImages && currentImageIndex < post.images.length - 1) {
+			currentImageIndex++;
 		}
 	}
 
