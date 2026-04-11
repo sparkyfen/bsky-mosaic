@@ -2,7 +2,11 @@
 	import { page } from '$app/state';
 	import { createAgent, getProfile, getPhotoPosts, type PhotoPost, type ProfileInfo } from '$lib/api/bluesky.js';
 	import { crawlReposts } from '$lib/api/crawler.js';
-	import { authState, followUser, unfollowUser, getFollowStatus } from '$lib/stores/auth.js';
+	import { authState, followUser, unfollowUser, getFollowStatus, getAuthenticatedAgent } from '$lib/stores/auth.js';
+
+	function getAgent() {
+		return getAuthenticatedAgent() || createAgent();
+	}
 	import { settings, updateSetting } from '$lib/stores/settings.js';
 	import Mosaic from '$lib/components/Mosaic.svelte';
 	import PhotoModal from '$lib/components/PhotoModal.svelte';
@@ -102,7 +106,7 @@
 		feedDone = false;
 
 		try {
-			const agent = createAgent();
+			const agent = getAgent();
 			profile = await getProfile(agent, handle);
 
 			// Load first page, then show immediately
@@ -128,7 +132,7 @@
 		loadingMore = true;
 
 		try {
-			const agent = createAgent();
+			const agent = getAgent();
 			const result = await getPhotoPosts(agent, handle, feedCursor, 100);
 			const newPosts = result.posts.filter(p => !seenUris.has(p.uri));
 			for (const p of newPosts) seenUris.add(p.uri);
@@ -173,7 +177,7 @@
 		crawlStatus = `Crawling depth 1...`;
 
 		try {
-			const agent = createAgent();
+			const agent = getAgent();
 
 			for await (const event of crawlReposts(agent, handle, {
 				maxDepth: Math.min($settings.crawlDepth, 5),
