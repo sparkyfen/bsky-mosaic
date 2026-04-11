@@ -3,7 +3,7 @@
 	import { theme, toggleTheme } from '$lib/stores/theme.js';
 	import { authState } from '$lib/stores/auth.js';
 
-	const nsfwLocked = $derived(!$authState.adultContentEnabled);
+	const nsfwLocked = $derived(!$authState.isAuthenticated || !$authState.adultContentEnabled);
 
 	function cycleNsfwMode() {
 		if (nsfwLocked) return;
@@ -79,7 +79,7 @@
 					<span class="setting-value" class:muted={$settings.nsfwMode === 'hide'}>{nsfwLocked ? 'Hide all' : nsfwLabels[$settings.nsfwMode]}</span>
 				</button>
 				{#if nsfwLocked}
-					<p class="setting-note">Adult content is restricted by your Bluesky account settings.</p>
+					<p class="setting-note">{$authState.isAuthenticated ? 'Adult content is restricted by your Bluesky account settings.' : 'Sign in to change content settings.'}</p>
 				{/if}
 				<div class="divider"></div>
 				<div class="setting-row">

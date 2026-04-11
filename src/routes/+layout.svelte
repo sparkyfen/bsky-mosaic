@@ -19,9 +19,9 @@
 		restoreSession();
 	});
 
-	// Force nsfwMode to 'hide' when adult content is restricted
+	// Force nsfwMode to 'hide' when authenticated but adult content is restricted
 	$effect(() => {
-		if (!$authState.adultContentEnabled) {
+		if ($authState.isAuthenticated && !$authState.adultContentEnabled) {
 			updateSetting('nsfwMode', 'hide');
 		}
 	});
