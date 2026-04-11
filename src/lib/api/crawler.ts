@@ -129,6 +129,8 @@ export async function* crawlReposts(
 
 		// Discover reposts for next level
 		if (depth < opts.maxDepth) {
+			const isAuthenticated = !!agent.session;
+
 			for (const account of currentLevel) {
 				try {
 					const res = await agent.getAuthorFeed({
@@ -156,9 +158,15 @@ export async function* crawlReposts(
 					}
 
 					for (const item of res.data.feed) {
-						if (
+						// Skip authors who require authentication when not logged in
+					const authorRequiresAuth = !isAuthenticated &&
+						Array.isArray(item.post.author.labels) &&
+						item.post.author.labels.some((l: any) => l.val === '!no-unauthenticated');
+
+					if (
 							item.reason?.$type === 'app.bsky.feed.defs#reasonRepost' &&
-							!visited.has(item.post.author.handle)
+							!visited.has(item.post.author.handle) &&
+							!authorRequiresAuth
 						) {
 							visited.add(item.post.author.handle);
 

@@ -79,12 +79,20 @@ export async function getPhotoPosts(
 		cursor
 	});
 
+	const isAuthenticated = !!agent.session;
 	const posts: PhotoPost[] = [];
 
 	for (const item of res.data.feed) {
 		const post = item.post;
 		const embed = post.embed;
 		const isRepost = item.reason?.$type === 'app.bsky.feed.defs#reasonRepost';
+
+		// Skip posts from authors who require authentication
+		if (!isAuthenticated && Array.isArray(post.author.labels)) {
+			if (post.author.labels.some((l: any) => l.val === '!no-unauthenticated')) {
+				continue;
+			}
+		}
 
 		// Extract content labels
 		const labels: string[] = [];
