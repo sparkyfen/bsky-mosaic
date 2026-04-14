@@ -49,7 +49,7 @@
 	let followUri = $state<string | null>(null);
 	let followLoading = $state(false);
 
-	const handle = $derived(decodeURIComponent(page.params.handle));
+	const handle = $derived(decodeURIComponent(page.params.handle ?? ''));
 
 	function formatCount(n: number | undefined): string {
 		if (n == null) return '0';
