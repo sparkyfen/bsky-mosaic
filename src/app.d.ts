@@ -1,11 +1,14 @@
-// See https://svelte.dev/docs/kit/types#app.d.ts
-// for information about these interfaces
+import type { PhotoPost } from '$lib/api/bluesky.js';
+
 declare global {
 	namespace App {
 		// interface Error {}
 		// interface Locals {}
 		// interface PageData {}
-		// interface PageState {}
+		interface PageState {
+			modalPost?: PhotoPost;
+			modalImageIndex?: number;
+		}
 		// interface Platform {}
 	}
 }

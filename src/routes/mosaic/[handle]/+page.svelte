@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { preloadData, pushState, goto } from '$app/navigation';
 	import { createAgent, getProfile, getPhotoPosts, type PhotoPost, type ProfileInfo } from '$lib/api/bluesky.js';
 	import { crawlReposts } from '$lib/api/crawler.js';
 	import { authState, followUser, unfollowUser, getFollowStatus, getAuthenticatedAgent } from '$lib/stores/auth.js';
@@ -20,8 +21,9 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let authRequired = $state(false);
-	let selectedPost = $state<PhotoPost | null>(null);
-	let selectedImageIndex = $state(0);
+
+	const modalPost = $derived(page.state.modalPost ?? null);
+	const modalImageIndex = $derived(page.state.modalImageIndex ?? 0);
 
 	const visiblePosts = $derived(posts.filter(p => !hiddenDids.has(p.author.did)));
 	const sortedPosts = $derived(
@@ -220,9 +222,29 @@
 		hiddenDids = new Set([...hiddenDids, did]);
 	}
 
-	function onPhotoClick(post: PhotoPost, imageIndex: number) {
-		selectedPost = post;
-		selectedImageIndex = imageIndex;
+	async function onPhotoClick(post: PhotoPost, imageIndex: number) {
+		const rkey = post.uri.split('/').pop();
+		if (!rkey) return;
+		const url = `/mosaic/${encodeURIComponent(handle)}/post/${rkey}`;
+		try {
+			const result = await preloadData(url);
+			if (result.type === 'loaded' && result.status === 200) {
+				// pushState uses structuredClone, which can't clone $state proxies —
+				// snapshot the post to a plain object first.
+				pushState(url, {
+					modalPost: $state.snapshot(post),
+					modalImageIndex: imageIndex
+				});
+				return;
+			}
+		} catch {
+			// fall through to full navigation
+		}
+		goto(url);
+	}
+
+	function closeModal() {
+		history.back();
 	}
 </script>
 
@@ -322,11 +344,11 @@
 	{/if}
 </div>
 
-{#if selectedPost}
+{#if modalPost}
 	<PhotoModal
-		post={selectedPost}
-		imageIndex={selectedImageIndex}
-		onclose={() => (selectedPost = null)}
+		post={modalPost}
+		imageIndex={modalImageIndex}
+		onclose={closeModal}
 	/>
 {/if}
 
