@@ -97,27 +97,12 @@ function extractImages(embed: any): EmbedImage[] {
 	}));
 }
 
-export async function buildProfileEmbed(handle: string, url: string, topN = 4): Promise<string> {
+export async function buildProfileEmbed(handle: string, url: string): Promise<string> {
 	const agent = serverAgent();
-	const [profileRes, feedRes] = await Promise.all([
-		agent.getProfile({ actor: handle }),
-		agent.getAuthorFeed({ actor: handle, filter: 'posts_with_media', limit: 30 })
-	]);
-
+	const profileRes = await agent.getProfile({ actor: handle });
 	const profile = profileRes.data;
-	const images: EmbedImage[] = [];
 
-	for (const item of feedRes.data.feed) {
-		if (images.length >= topN) break;
-		for (const img of extractImages((item.post as any).embed)) {
-			if (images.length >= topN) break;
-			images.push(img);
-		}
-	}
-
-	if (images.length === 0 && profile.avatar) {
-		images.push({ url: profile.avatar });
-	}
+	const images: EmbedImage[] = profile.avatar ? [{ url: profile.avatar }] : [];
 
 	const name = profile.displayName || profile.handle;
 	const title = `${name} — ${SITE_NAME}`;
