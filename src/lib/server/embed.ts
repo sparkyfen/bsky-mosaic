@@ -83,6 +83,10 @@ ${primaryImage ? `<meta name="twitter:image" content="${e(primaryImage)}" />` : 
 // because Telegram only renders the first og:image tag, so multi-image
 // posts need to be pre-composited into a single image. Usage approved
 // by dangeredwolf (FxEmbed maintainer) for tiles.blue embeds.
+//
+// The `:3` segment is not an image count — it's a hardcoded placeholder
+// that keeps the mosaic URL path compatible with the equivalent Twitter
+// mosaic URLs (per dangeredwolf).
 function buildMosaicImageUrl(images: EmbedImage[]): string | null {
 	const params: string[] = [];
 	for (const img of images.slice(0, 4)) {
@@ -91,7 +95,7 @@ function buildMosaicImageUrl(images: EmbedImage[]): string | null {
 		params.push(`${m[1]}_${m[2]}`);
 	}
 	if (params.length < 2) return null;
-	return `https://mosaic.fxbsky.app/jpeg/:${params.length}/${params.join('/')}`;
+	return `https://mosaic.fxbsky.app/jpeg/:3/${params.join('/')}`;
 }
 
 function extractImages(embed: any): EmbedImage[] {
