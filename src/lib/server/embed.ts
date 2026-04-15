@@ -79,6 +79,21 @@ ${primaryImage ? `<meta name="twitter:image" content="${e(primaryImage)}" />` : 
 </html>`;
 }
 
+// Build a mosaic URL via FxEmbed's hosted compositing service. Needed
+// because Telegram only renders the first og:image tag, so multi-image
+// posts need to be pre-composited into a single image. Usage approved
+// by dangeredwolf (FxEmbed maintainer) for tiles.blue embeds.
+function buildMosaicImageUrl(images: EmbedImage[]): string | null {
+	const params: string[] = [];
+	for (const img of images.slice(0, 4)) {
+		const m = img.url.match(/\/img\/feed_fullsize\/plain\/([^/]+)\/([^/?]+)/);
+		if (!m) return null;
+		params.push(`${m[1]}_${m[2]}`);
+	}
+	if (params.length < 2) return null;
+	return `https://mosaic.fxbsky.app/jpeg/:${params.length}/${params.join('/')}`;
+}
+
 function extractImages(embed: any): EmbedImage[] {
 	let raw: any[] = [];
 	if (embed?.$type === 'app.bsky.embed.images#view') {
@@ -127,8 +142,16 @@ export async function buildPostEmbed(handle: string, rkey: string, url: string):
 	const post = thread.post;
 	const images = extractImages(post.embed);
 
-	if (images.length === 0 && post.author.avatar) {
-		images.push({ url: post.author.avatar });
+	let embedImages: EmbedImage[] = images;
+	if (images.length >= 2) {
+		const mosaicUrl = buildMosaicImageUrl(images);
+		if (mosaicUrl) {
+			embedImages = [{ url: mosaicUrl }];
+		}
+	}
+
+	if (embedImages.length === 0 && post.author.avatar) {
+		embedImages = [{ url: post.author.avatar }];
 	}
 
 	const name = post.author.displayName || post.author.handle;
@@ -139,7 +162,7 @@ export async function buildPostEmbed(handle: string, rkey: string, url: string):
 	return buildEmbedHtml({
 		title,
 		description,
-		images,
+		images: embedImages,
 		url,
 		canonical: url,
 		type: 'article'
