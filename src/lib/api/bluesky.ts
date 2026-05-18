@@ -43,10 +43,23 @@ export interface PhotoPost {
 }
 
 export interface PhotoImage {
+	cid: string;
 	thumb: string;
 	fullsize: string;
 	alt: string;
 	aspectRatio?: { width: number; height: number };
+}
+
+export function extractImageCids(record: any): string[] {
+	const embed = record?.embed;
+	if (!embed) return [];
+	let images: any[] | undefined;
+	if (embed.$type === 'app.bsky.embed.images') {
+		images = embed.images;
+	} else if (embed.$type === 'app.bsky.embed.recordWithMedia' && embed.media?.$type === 'app.bsky.embed.images') {
+		images = embed.media.images;
+	}
+	return (images ?? []).map((i: any) => i?.image?.ref?.toString() ?? '');
 }
 
 export async function getProfile(agent: BskyAgent, handle: string): Promise<ProfileInfo> {
@@ -103,27 +116,30 @@ export async function getPhotoPosts(
 		}
 
 		const images: PhotoImage[] = [];
+		const recordCids = extractImageCids((post as any).record);
 
 		if (embed?.$type === 'app.bsky.embed.images#view') {
-			for (const img of (embed as any).images) {
+			(embed as any).images.forEach((img: any, idx: number) => {
 				images.push({
+					cid: recordCids[idx] ?? '',
 					thumb: img.thumb,
 					fullsize: img.fullsize,
 					alt: img.alt || '',
 					aspectRatio: img.aspectRatio
 				});
-			}
+			});
 		} else if (embed?.$type === 'app.bsky.embed.recordWithMedia#view') {
 			const media = (embed as any).media;
 			if (media?.$type === 'app.bsky.embed.images#view') {
-				for (const img of media.images) {
+				media.images.forEach((img: any, idx: number) => {
 					images.push({
+						cid: recordCids[idx] ?? '',
 						thumb: img.thumb,
 						fullsize: img.fullsize,
 						alt: img.alt || '',
 						aspectRatio: img.aspectRatio
 					});
-				}
+				});
 			}
 		}
 
