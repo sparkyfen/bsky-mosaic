@@ -49,9 +49,21 @@
 		return cleaned;
 	}
 
+	// Content queries (#hashtag / tag:e621 / from:) go to the search page; a
+	// plain handle still jumps straight to that account's mosaic.
+	function isContentQuery(input: string): boolean {
+		return /(^|\s)(#|tag:|from:)/i.test(input);
+	}
+
 	function onSubmit(e: Event) {
 		e.preventDefault();
-		const resolved = parseHandle(handle);
+		const trimmed = handle.trim();
+		if (!trimmed) return;
+		if (isContentQuery(trimmed)) {
+			goto(`/search?q=${encodeURIComponent(trimmed)}`);
+			return;
+		}
+		const resolved = parseHandle(trimmed);
 		if (resolved) {
 			goto(`/mosaic/${encodeURIComponent(resolved)}`);
 		}
@@ -69,7 +81,7 @@
 			<input
 				type="text"
 				bind:value={handle}
-				placeholder="Enter a handle (e.g. alice.bsky.social)"
+				placeholder="Handle, #hashtag, or tag:fennec_fox"
 			/>
 			<button type="submit" disabled={!handle.trim()}>Explore</button>
 		</form>

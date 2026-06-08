@@ -4,6 +4,7 @@
 	import { getPostTags, type EntailImageTags } from '$lib/api/entail.js';
 	import { goto } from '$app/navigation';
 	import { authState, followUser, unfollowUser, getFollowStatus } from '$lib/stores/auth.js';
+	import { settings } from '$lib/stores/settings.js';
 	import DiscoveryPath from './DiscoveryPath.svelte';
 
 	interface Props {
@@ -37,6 +38,15 @@
 		fullImageLoaded = false;
 	});
 
+	// e621 tag gating — see issues #4 and #6.
+	// All three must be true: FurryList member, NSFW mode explicitly 'show', and 18+ per Bluesky birth date.
+	const e621Enabled = $derived(
+		$authState.isAuthenticated &&
+		$authState.uwu &&
+		$authState.ageVerified &&
+		$settings.nsfwMode === 'show'
+	);
+
 	let tagsByCid = $state<Record<string, EntailImageTags>>({});
 	let tagsLoading = $state(false);
 	let tagsError = $state<string | null>(null);
@@ -60,6 +70,7 @@
 	});
 
 	onMount(() => {
+		if (!e621Enabled) return;
 		tagsLoading = true;
 		getPostTags(post.author.did, rkey)
 			.then((r) => {
@@ -253,6 +264,7 @@
 					Open in Bluesky
 				</a>
 
+				{#if e621Enabled}
 				<div class="tags-section">
 					<h3>
 						e621 Tags
@@ -267,7 +279,7 @@
 					{:else if currentTags && currentTags.tags.length > 0}
 						<ul class="tag-list">
 							{#each visibleTags as tag}
-								<li class="tag">{tag}</li>
+								<li class="tag">{tag.name}</li>
 							{/each}
 							{#if hiddenTagCount > 0 && !tagsExpanded}
 								<li>
@@ -281,6 +293,7 @@
 						<p class="tags-status">No tags for this image.</p>
 					{/if}
 				</div>
+				{/if}
 
 				{#if post.parentChain.length > 0}
 					<div class="discovery-section desktop-only">

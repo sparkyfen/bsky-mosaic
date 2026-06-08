@@ -20,9 +20,22 @@
 		return cleaned;
 	}
 
+	// Content queries (#hashtag / tag:e621) go to the search page; a plain
+	// handle still jumps straight to that account's mosaic.
+	function isContentQuery(input: string): boolean {
+		return /(^|\s)(#|tag:|from:)/i.test(input);
+	}
+
 	function onSubmit(e: Event) {
 		e.preventDefault();
-		const resolved = parseHandle(handle);
+		const trimmed = handle.trim();
+		if (!trimmed) return;
+		if (isContentQuery(trimmed)) {
+			goto(`/search?q=${encodeURIComponent(trimmed)}`);
+			handle = '';
+			return;
+		}
+		const resolved = parseHandle(trimmed);
 		if (resolved) {
 			goto(`/mosaic/${encodeURIComponent(resolved)}`);
 			handle = '';
