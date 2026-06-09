@@ -375,3 +375,24 @@ export async function getFollowStatus(did: string): Promise<string | null> {
 	const viewer = res.data.viewer;
 	return viewer?.following || null;
 }
+
+export async function likePost(uri: string, cid: string): Promise<string> {
+	const agent = getAuthenticatedAgent();
+	if (!agent) throw new Error('Not logged in');
+	const res = await agent.like(uri, cid);
+	return res.uri;
+}
+
+export async function unlikePost(likeUri: string): Promise<void> {
+	const agent = getAuthenticatedAgent();
+	if (!agent) throw new Error('Not logged in');
+	await agent.deleteLike(likeUri);
+}
+
+export async function getLikeStatus(uri: string): Promise<string | null> {
+	const agent = getAuthenticatedAgent();
+	if (!agent) return null;
+	const res = await agent.getPosts({ uris: [uri] });
+	const viewer = res.data.posts[0]?.viewer;
+	return viewer?.like || null;
+}
