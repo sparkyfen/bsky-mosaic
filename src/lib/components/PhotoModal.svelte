@@ -3,7 +3,15 @@
 	import type { PhotoPost } from '$lib/api/bluesky.js';
 	import { getPostTags, type EntailImageTags } from '$lib/api/entail.js';
 	import { goto } from '$app/navigation';
-	import { authState, followUser, unfollowUser, getFollowStatus } from '$lib/stores/auth.js';
+	import {
+		authState,
+		followUser,
+		unfollowUser,
+		getFollowStatus,
+		likePost,
+		unlikePost,
+		getLikeStatus
+	} from '$lib/stores/auth.js';
 	import { settings } from '$lib/stores/settings.js';
 	import DiscoveryPath from './DiscoveryPath.svelte';
 
@@ -117,6 +125,42 @@
 			console.error('Follow/unfollow failed:', err);
 		} finally {
 			followLoading = false;
+		}
+	}
+
+	let likeUri = $state<string | null>(null);
+	let likeLoading = $state(false);
+
+	$effect(() => {
+		if ($authState.isAuthenticated) {
+			checkLike(post.uri);
+		} else {
+			likeUri = null;
+		}
+	});
+
+	async function checkLike(uri: string) {
+		try {
+			likeUri = await getLikeStatus(uri);
+		} catch {
+			likeUri = null;
+		}
+	}
+
+	async function handleLike() {
+		if (likeLoading || !$authState.isAuthenticated) return;
+		likeLoading = true;
+		try {
+			if (likeUri) {
+				await unlikePost(likeUri);
+				likeUri = null;
+			} else {
+				likeUri = await likePost(post.uri, post.cid);
+			}
+		} catch (err) {
+			console.error('Like/unlike failed:', err);
+		} finally {
+			likeLoading = false;
 		}
 	}
 
@@ -234,24 +278,40 @@
 							<span class="handle">@{post.author.handle}</span>
 						</div>
 					</button>
-					{#if $authState.isAuthenticated && post.author.did !== $authState.did}
-						<button
-							class="follow-btn desktop-only"
-							class:following={!!followUri}
-							onclick={handleFollow}
-							disabled={followLoading}
-							type="button"
-						>
-							{#if followLoading}
-								...
-							{:else if followUri}
-								<span class="follow-label">Following</span>
-								<span class="unfollow-label">Unfollow</span>
-							{:else}
-								Follow
-							{/if}
-						</button>
-					{/if}
+					<div class="author-actions">
+						{#if $authState.isAuthenticated}
+							<button
+								class="like-btn"
+								class:liked={!!likeUri}
+								onclick={handleLike}
+								disabled={likeLoading}
+								type="button"
+								aria-label={likeUri ? 'Unlike post' : 'Like post'}
+								title={likeUri ? 'Unlike' : 'Like'}
+							>
+								<span class="like-emoji">{likeUri ? '❤️' : '🤍'}</span>
+								<span class="like-label">{likeUri ? 'Liked' : 'Like'}</span>
+							</button>
+						{/if}
+						{#if $authState.isAuthenticated && post.author.did !== $authState.did}
+							<button
+								class="follow-btn desktop-only"
+								class:following={!!followUri}
+								onclick={handleFollow}
+								disabled={followLoading}
+								type="button"
+							>
+								{#if followLoading}
+									...
+								{:else if followUri}
+									<span class="follow-label">Following</span>
+									<span class="unfollow-label">Unfollow</span>
+								{:else}
+									Follow
+								{/if}
+							</button>
+						{/if}
+					</div>
 				</div>
 
 				<!-- Desktop: inline link -->
@@ -483,6 +543,48 @@
 		align-items: center;
 		justify-content: space-between;
 		margin-bottom: 16px;
+	}
+
+	.author-actions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-shrink: 0;
+	}
+
+	.like-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 7px 14px;
+		border: 1px solid var(--border);
+		border-radius: 9999px;
+		background: var(--input-bg);
+		color: var(--fg);
+		font-family: 'Geist', sans-serif;
+		font-size: 14px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: border-color 0.2s, background 0.2s, color 0.2s;
+	}
+
+	.like-btn:hover:not(:disabled) {
+		border-color: #ec4899;
+	}
+
+	.like-btn.liked {
+		border-color: #ec4899;
+		color: #ec4899;
+	}
+
+	.like-btn .like-emoji {
+		font-size: 15px;
+		line-height: 1;
+	}
+
+	.like-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	.author-info {
