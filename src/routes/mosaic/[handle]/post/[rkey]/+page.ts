@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { createAgent, type PhotoImage, type PhotoPost } from '$lib/api/bluesky.js';
+import { createAgent, extractImageCids, type PhotoImage, type PhotoPost } from '$lib/api/bluesky.js';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ params }) => {
@@ -31,27 +31,30 @@ export const load: PageLoad = async ({ params }) => {
 	const p = thread.post;
 	const embed = p.embed;
 	const images: PhotoImage[] = [];
+	const recordCids = extractImageCids(p.record);
 
 	if (embed?.$type === 'app.bsky.embed.images#view') {
-		for (const img of (embed as any).images) {
+		(embed as any).images.forEach((img: any, idx: number) => {
 			images.push({
+				cid: recordCids[idx] ?? '',
 				thumb: img.thumb,
 				fullsize: img.fullsize,
 				alt: img.alt || '',
 				aspectRatio: img.aspectRatio
 			});
-		}
+		});
 	} else if (embed?.$type === 'app.bsky.embed.recordWithMedia#view') {
 		const media = (embed as any).media;
 		if (media?.$type === 'app.bsky.embed.images#view') {
-			for (const img of media.images) {
+			media.images.forEach((img: any, idx: number) => {
 				images.push({
+					cid: recordCids[idx] ?? '',
 					thumb: img.thumb,
 					fullsize: img.fullsize,
 					alt: img.alt || '',
 					aspectRatio: img.aspectRatio
 				});
-			}
+			});
 		}
 	}
 

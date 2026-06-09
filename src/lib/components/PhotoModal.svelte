@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { PhotoPost } from '$lib/api/bluesky.js';
+	import { getPostTags, type EntailImageTags } from '$lib/api/entail.js';
 	import { goto } from '$app/navigation';
 	import {
 		authState,
@@ -11,6 +12,7 @@
 		unlikePost,
 		getLikeStatus
 	} from '$lib/stores/auth.js';
+	import { settings } from '$lib/stores/settings.js';
 	import DiscoveryPath from './DiscoveryPath.svelte';
 
 	interface Props {
@@ -42,6 +44,54 @@
 		// Reset load state whenever the active image changes
 		void image.fullsize;
 		fullImageLoaded = false;
+	});
+
+	// e621 tag gating — see issues #4 and #6.
+	// All three must be true: FurryList member, NSFW mode explicitly 'show', and 18+ per Bluesky birth date.
+	const e621Enabled = $derived(
+		$authState.isAuthenticated &&
+		$authState.uwu &&
+		$authState.ageVerified &&
+		$settings.nsfwMode === 'show'
+	);
+
+	let tagsByCid = $state<Record<string, EntailImageTags>>({});
+	let tagsLoading = $state(false);
+	let tagsError = $state<string | null>(null);
+	let tagsExpanded = $state(false);
+	const TAG_LIMIT = 15;
+	const currentTags = $derived(image.cid ? tagsByCid[image.cid] : undefined);
+	const visibleTags = $derived(
+		currentTags
+			? tagsExpanded
+				? currentTags.tags
+				: currentTags.tags.slice(0, TAG_LIMIT)
+			: []
+	);
+	const hiddenTagCount = $derived(
+		currentTags ? Math.max(0, currentTags.tags.length - TAG_LIMIT) : 0
+	);
+
+	$effect(() => {
+		void image.cid;
+		tagsExpanded = false;
+	});
+
+	onMount(() => {
+		if (!e621Enabled) return;
+		tagsLoading = true;
+		getPostTags(post.author.did, rkey)
+			.then((r) => {
+				const map: Record<string, EntailImageTags> = {};
+				for (const img of r.images) map[img.cid] = img;
+				tagsByCid = map;
+			})
+			.catch((e) => {
+				tagsError = e instanceof Error ? e.message : 'failed to load tags';
+			})
+			.finally(() => {
+				tagsLoading = false;
+			});
 	});
 
 	let followUri = $state<string | null>(null);
@@ -273,6 +323,37 @@
 					</svg>
 					Open in Bluesky
 				</a>
+
+				{#if e621Enabled}
+				<div class="tags-section">
+					<h3>
+						e621 Tags
+						{#if currentTags}
+							<span class="rating-pill rating-{currentTags.rating}">{currentTags.rating}</span>
+						{/if}
+					</h3>
+					{#if tagsLoading}
+						<p class="tags-status">Loading…</p>
+					{:else if tagsError}
+						<p class="tags-status">{tagsError}</p>
+					{:else if currentTags && currentTags.tags.length > 0}
+						<ul class="tag-list">
+							{#each visibleTags as tag}
+								<li class="tag">{tag.name}</li>
+							{/each}
+							{#if hiddenTagCount > 0 && !tagsExpanded}
+								<li>
+									<button class="more-tags" type="button" onclick={() => (tagsExpanded = true)}>
+										and {hiddenTagCount} more
+									</button>
+								</li>
+							{/if}
+						</ul>
+					{:else}
+						<p class="tags-status">No tags for this image.</p>
+					{/if}
+				</div>
+				{/if}
 
 				{#if post.parentChain.length > 0}
 					<div class="discovery-section desktop-only">
@@ -588,6 +669,91 @@
 
 	.bsky-link:hover {
 		background: var(--bg-muted);
+	}
+
+	.tags-section {
+		border-top: 1px solid var(--border);
+		padding-top: 16px;
+		margin-bottom: 16px;
+	}
+
+	.tags-section h3 {
+		margin: 0 0 12px;
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 12px;
+		color: var(--fg-dim);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.rating-pill {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 11px;
+		font-weight: 600;
+		padding: 2px 8px;
+		border-radius: 9999px;
+		border: 1px solid currentColor;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.rating-safe {
+		color: #3ba55c;
+		background: rgba(59, 165, 92, 0.12);
+	}
+
+	.rating-questionable {
+		color: #e0a83a;
+		background: rgba(224, 168, 58, 0.12);
+	}
+
+	.rating-explicit {
+		color: #e0533a;
+		background: rgba(224, 83, 58, 0.12);
+	}
+
+	.tags-status {
+		margin: 0;
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 13px;
+		color: var(--fg-subtle);
+	}
+
+	.tag-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.tag {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 12px;
+		color: var(--fg-muted);
+		background: var(--bg-muted);
+		border: 1px solid var(--border);
+		border-radius: 9999px;
+		padding: 4px 10px;
+	}
+
+	.more-tags {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 12px;
+		color: var(--fg-subtle);
+		background: none;
+		border: none;
+		padding: 4px 4px;
+		cursor: pointer;
+		user-select: text;
+	}
+
+	.more-tags:hover {
+		color: var(--accent-purple);
 	}
 
 	.discovery-section {
