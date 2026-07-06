@@ -75,37 +75,53 @@
 	// API and is interpolated into a class name.
 	const KNOWN_RATINGS: EntailRating[] = ['safe', 'questionable', 'explicit'];
 	const currentRating = $derived(KNOWN_RATINGS.find((r) => r === currentTags?.rating) ?? null);
+	// One always-mounted role="status" element whose text changes announces
+	// reliably; empty string while the tag list is showing.
+	const tagsStatus = $derived(
+		tagsLoading
+			? 'Loading…'
+			: tagsError
+				? tagsError
+				: currentTags && currentTags.tags.length > 0
+					? ''
+					: 'No tags for this image.'
+	);
 
 	$effect(() => {
 		void image.cid;
 		tagsExpanded = false;
 	});
 
-	// Fetch once e621Enabled becomes true — auth (uwu/ageVerified) resolves
-	// asynchronously after mount, so an onMount check would skip the fetch
-	// when the modal is opened via a direct post URL.
+	// Fetch reactively: auth (uwu/ageVerified) resolves asynchronously after mount.
 	// Plain (non-$state) on purpose: the guard must not be a tracked dependency.
-	let tagsRequestedFor: string | null = null;
+	let tagsRequest: { rkey: string } | null = null;
 	$effect(() => {
 		if (!e621Enabled) {
-			// Allow a refetch after logout→login or a failed request.
-			tagsRequestedFor = null;
+			// Re-arm the guard (an e621Enabled false→true toggle refetches) and
+			// invalidate any in-flight request.
+			tagsRequest = null;
 			tagsError = null;
+			tagsLoading = false;
 			return;
 		}
-		if (tagsRequestedFor === rkey) return;
-		tagsRequestedFor = rkey;
+		if (tagsRequest?.rkey === rkey) return;
+		const request = { rkey };
+		tagsRequest = request;
+		tagsError = null;
 		tagsLoading = true;
 		getPostTags(post.author.did, rkey)
 			.then((r) => {
+				if (tagsRequest !== request) return; // stale response
 				const map: Record<string, EntailImageTags> = {};
 				for (const img of r.images) map[img.cid] = img;
 				tagsByCid = map;
 			})
 			.catch((e) => {
+				if (tagsRequest !== request) return; // stale response
 				tagsError = e instanceof Error ? e.message : 'failed to load tags';
 			})
 			.finally(() => {
+				if (tagsRequest !== request) return; // stale response
 				tagsLoading = false;
 			});
 	});
@@ -348,26 +364,23 @@
 							<span class="rating-pill rating-{currentRating}">{currentRating}</span>
 						{/if}
 					</h3>
-					{#if tagsLoading}
-						<p class="tags-status" role="status">Loading…</p>
-					{:else if tagsError}
-						<p class="tags-status" role="status">{tagsError}</p>
-					{:else if currentTags && currentTags.tags.length > 0}
-						<ul class="tag-list">
-							{#each visibleTags as tag}
-								<li class="tag">{tag.name}</li>
-							{/each}
-							{#if hiddenTagCount > 0 && !tagsExpanded}
-								<li>
-									<button class="more-tags" type="button" onclick={() => (tagsExpanded = true)}>
-										and {hiddenTagCount} more
-									</button>
-								</li>
-							{/if}
-						</ul>
-					{:else}
-						<p class="tags-status" role="status">No tags for this image.</p>
-					{/if}
+					<div class="tags-body">
+						<p class="tags-status" role="status">{tagsStatus}</p>
+						{#if !tagsStatus}
+							<ul class="tag-list">
+								{#each visibleTags as tag}
+									<li class="tag">{tag.name}</li>
+								{/each}
+								{#if hiddenTagCount > 0 && !tagsExpanded}
+									<li>
+										<button class="more-tags" type="button" onclick={() => (tagsExpanded = true)}>
+											and {hiddenTagCount} more
+										</button>
+									</li>
+								{/if}
+							</ul>
+						{/if}
+					</div>
 				</div>
 				{/if}
 
@@ -729,7 +742,7 @@
 	.rating-explicit {
 		/* #e76e55 clears 4.5:1 AA contrast over the tinted dark card (#e0533a was ~4:1) */
 		color: #e76e55;
-		background: rgba(224, 83, 58, 0.12);
+		background: rgba(231, 110, 85, 0.12);
 	}
 
 	.tags-status {
@@ -739,10 +752,10 @@
 		color: var(--fg-subtle);
 	}
 
-	/* Reserve ~two rows of tag chips so Loading→tags doesn't shift the buttons below */
-	.tags-status,
-	.tag-list {
-		min-height: 54px;
+	/* Reserve ~two rows of tag chips so Loading→tags doesn't shift the buttons below.
+	   On the wrapper, not the status <p>: the empty status must not add height. */
+	.tags-body {
+		min-height: 58px;
 	}
 
 	.tag-list {
