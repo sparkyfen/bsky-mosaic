@@ -71,17 +71,21 @@ async function processWithConcurrency<T, R>(
 export async function* crawlReposts(
 	agent: BskyAgent,
 	startHandle: string,
-	options: Partial<CrawlOptions> = {}
+	options: Partial<CrawlOptions> = {},
+	startProfile?: ProfileInfo
 ): AsyncGenerator<CrawlEvent> {
 	const opts = { ...DEFAULT_OPTIONS, ...options };
 	const visited = new Set<string>();
 	let totalPhotos = 0;
 
-	// Depth 0: starting account
-	visited.add(startHandle);
+	// Depth 0: starting account. Prefer the canonical handle from the profile —
+	// the route param may differ in case (e.g. phone keyboards auto-capitalize),
+	// while feed items always carry the canonical lowercase handle.
+	const rootHandle = startProfile?.handle ?? startHandle;
+	visited.add(rootHandle);
 
 	let currentLevel: { handle: string; profile?: ProfileInfo; parentChain: ProfileInfo[] }[] = [
-		{ handle: startHandle, parentChain: [] }
+		{ handle: rootHandle, profile: startProfile, parentChain: [] }
 	];
 
 	for (let depth = 0; depth <= opts.maxDepth; depth++) {
@@ -145,7 +149,7 @@ export async function* crawlReposts(
 						// For depth 0, get profile from any post authored by this account
 						// For deeper levels, use the stored profile
 						for (const item of res.data.feed) {
-							if (item.post.author.handle === account.handle) {
+							if (item.post.author.handle.toLowerCase() === account.handle.toLowerCase()) {
 								currentProfile = {
 									did: item.post.author.did,
 									handle: item.post.author.handle,

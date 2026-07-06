@@ -27,3 +27,6 @@ images/
 
 # IDE
 .idea/
+
+# Ship review artifacts
+.ship/
