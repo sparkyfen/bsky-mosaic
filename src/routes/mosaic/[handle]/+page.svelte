@@ -198,7 +198,7 @@
 				maxDepth: Math.min($settings.crawlDepth, 5),
 				accountsPerLevel: Math.min($settings.accountsPerLevel, 200),
 				postsPerAccount: Math.min($settings.postsPerAccount, 500)
-			})) {
+			}, profile ?? undefined)) {
 				if (event.type === 'photos') {
 					const newPosts = event.posts.filter((p: PhotoPost) => !seenUris.has(p.uri));
 					for (const p of newPosts) seenUris.add(p.uri);
