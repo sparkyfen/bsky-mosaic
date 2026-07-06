@@ -77,8 +77,13 @@
 		tagsExpanded = false;
 	});
 
-	onMount(() => {
-		if (!e621Enabled) return;
+	// Fetch once e621Enabled becomes true — auth (uwu/ageVerified) resolves
+	// asynchronously after mount, so an onMount check would skip the fetch
+	// when the modal is opened via a direct post URL.
+	let tagsRequested = false;
+	$effect(() => {
+		if (!e621Enabled || tagsRequested) return;
+		tagsRequested = true;
 		tagsLoading = true;
 		getPostTags(post.author.did, rkey)
 			.then((r) => {
@@ -328,7 +333,7 @@
 				<div class="tags-section">
 					<h3>
 						e621 Tags
-						{#if currentTags}
+						{#if currentTags?.rating}
 							<span class="rating-pill rating-{currentTags.rating}">{currentTags.rating}</span>
 						{/if}
 					</h3>
