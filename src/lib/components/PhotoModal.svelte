@@ -356,7 +356,7 @@
 				{/if}
 
 				{#if post.parentChain.length > 0}
-					<div class="discovery-section desktop-only">
+					<div class="discovery-section">
 						<h3>Discovery Path</h3>
 						<DiscoveryPath chain={post.parentChain} current={post.author} onnavigate={onclose} />
 					</div>
