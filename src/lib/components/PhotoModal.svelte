@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { PhotoPost } from '$lib/api/bluesky.js';
-	import { getPostTags, type EntailImageTags } from '$lib/api/entail.js';
+	import { getPostTags, type EntailImageTags, type EntailRating } from '$lib/api/entail.js';
 	import { goto } from '$app/navigation';
 	import {
 		authState,
@@ -71,6 +71,10 @@
 	const hiddenTagCount = $derived(
 		currentTags ? Math.max(0, currentTags.tags.length - TAG_LIMIT) : 0
 	);
+	// Only render the pill for known ratings — the value comes from a third-party
+	// API and is interpolated into a class name.
+	const KNOWN_RATINGS: EntailRating[] = ['safe', 'questionable', 'explicit'];
+	const currentRating = $derived(KNOWN_RATINGS.find((r) => r === currentTags?.rating) ?? null);
 
 	$effect(() => {
 		void image.cid;
@@ -80,10 +84,17 @@
 	// Fetch once e621Enabled becomes true — auth (uwu/ageVerified) resolves
 	// asynchronously after mount, so an onMount check would skip the fetch
 	// when the modal is opened via a direct post URL.
-	let tagsRequested = false;
+	// Plain (non-$state) on purpose: the guard must not be a tracked dependency.
+	let tagsRequestedFor: string | null = null;
 	$effect(() => {
-		if (!e621Enabled || tagsRequested) return;
-		tagsRequested = true;
+		if (!e621Enabled) {
+			// Allow a refetch after logout→login or a failed request.
+			tagsRequestedFor = null;
+			tagsError = null;
+			return;
+		}
+		if (tagsRequestedFor === rkey) return;
+		tagsRequestedFor = rkey;
 		tagsLoading = true;
 		getPostTags(post.author.did, rkey)
 			.then((r) => {
@@ -333,14 +344,14 @@
 				<div class="tags-section">
 					<h3>
 						e621 Tags
-						{#if currentTags?.rating}
-							<span class="rating-pill rating-{currentTags.rating}">{currentTags.rating}</span>
+						{#if currentRating}
+							<span class="rating-pill rating-{currentRating}">{currentRating}</span>
 						{/if}
 					</h3>
 					{#if tagsLoading}
-						<p class="tags-status">Loading…</p>
+						<p class="tags-status" role="status">Loading…</p>
 					{:else if tagsError}
-						<p class="tags-status">{tagsError}</p>
+						<p class="tags-status" role="status">{tagsError}</p>
 					{:else if currentTags && currentTags.tags.length > 0}
 						<ul class="tag-list">
 							{#each visibleTags as tag}
@@ -355,7 +366,7 @@
 							{/if}
 						</ul>
 					{:else}
-						<p class="tags-status">No tags for this image.</p>
+						<p class="tags-status" role="status">No tags for this image.</p>
 					{/if}
 				</div>
 				{/if}
@@ -716,7 +727,8 @@
 	}
 
 	.rating-explicit {
-		color: #e0533a;
+		/* #e76e55 clears 4.5:1 AA contrast over the tinted dark card (#e0533a was ~4:1) */
+		color: #e76e55;
 		background: rgba(224, 83, 58, 0.12);
 	}
 
@@ -727,12 +739,19 @@
 		color: var(--fg-subtle);
 	}
 
+	/* Reserve ~two rows of tag chips so Loading→tags doesn't shift the buttons below */
+	.tags-status,
+	.tag-list {
+		min-height: 54px;
+	}
+
 	.tag-list {
 		list-style: none;
 		padding: 0;
 		margin: 0;
 		display: flex;
 		flex-wrap: wrap;
+		align-content: flex-start;
 		gap: 6px;
 	}
 
