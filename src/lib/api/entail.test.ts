@@ -118,6 +118,15 @@ describe('getPostTags', () => {
 		).rejects.toThrow(/unexpected/i);
 	});
 
+	it('rejects an image entry without a cid or a tags array', async () => {
+		for (const image of [{ cid: 'bafkreiexamplecid' }, { tags: [] }]) {
+			const { fetchImpl } = server(() => json(200, { uri: URI, images: [image] }));
+			await expect(
+				getPostTags('did:plc:example', '3exampleabc12', { fetchImpl })
+			).rejects.toThrow(/unexpected/i);
+		}
+	});
+
 	it('rejects on an HTTP error', async () => {
 		const { fetchImpl } = server(() => json(503, { error: 'Database unavailable' }));
 		await expect(

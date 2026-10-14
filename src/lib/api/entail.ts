@@ -46,6 +46,12 @@ export interface EntailPostOptions {
 const POST_ATTEMPTS = 2;
 const POST_RETRY_PAUSE_MS = 3000;
 
+/** The modal keys tags by `cid` and slices `tags`, so both have to be there. */
+function isImageEntry(entry: unknown): boolean {
+	const { cid, tags } = (entry ?? {}) as { cid?: unknown; tags?: unknown };
+	return typeof cid === 'string' && Array.isArray(tags);
+}
+
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
@@ -75,7 +81,7 @@ export async function getPostTags(
 		}
 
 		const body = (await res.json()) as Partial<EntailPostResponse> | null;
-		if (!Array.isArray(body?.images)) {
+		if (!Array.isArray(body?.images) || !body.images.every(isImageEntry)) {
 			throw new Error('Unexpected response from entail');
 		}
 		return { status: 'ready', post: body as EntailPostResponse };
