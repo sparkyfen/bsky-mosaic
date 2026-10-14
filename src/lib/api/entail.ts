@@ -37,7 +37,7 @@ export type EntailPostResult =
 export interface EntailPostOptions {
 	signal?: AbortSignal;
 	fetchImpl?: typeof fetch;
-	pause?: (ms: number) => Promise<void>;
+	pause?: (ms: number, signal?: AbortSignal) => Promise<void>;
 }
 
 // With wait=true, entail holds a request for a post it hasn't classified for
@@ -61,7 +61,21 @@ function isImageEntry(entry: unknown): boolean {
 	return typeof cid === 'string' && Array.isArray(tags) && tags.every(isTagScore);
 }
 
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+/** Resolves after `ms`, or rejects as soon as `signal` aborts. */
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+	return new Promise((resolve, reject) => {
+		if (signal?.aborted) return reject(signal.reason);
+		const timer = setTimeout(() => {
+			signal?.removeEventListener('abort', onAbort);
+			resolve();
+		}, ms);
+		function onAbort() {
+			clearTimeout(timer);
+			reject(signal?.reason);
+		}
+		signal?.addEventListener('abort', onAbort, { once: true });
+	});
+}
 
 /**
  * Forward lookup: given a Bluesky post, return per-image e621 tags with
@@ -84,7 +98,7 @@ export async function getPostTags(
 	const url = `${ENTAIL_API}/post?${params.toString()}`;
 
 	for (let attempt = 0; attempt < POST_ATTEMPTS; attempt++) {
-		if (attempt > 0) await pause(POST_RETRY_PAUSE_MS);
+		if (attempt > 0) await pause(POST_RETRY_PAUSE_MS, signal);
 		signal?.throwIfAborted();
 		const res = await fetchImpl(url, { signal });
 		signal?.throwIfAborted();

@@ -127,6 +127,21 @@ describe('getPostTags', () => {
 		expect(hits.length).toBe(1);
 	});
 
+	it('stops waiting between retries as soon as the caller aborts', async () => {
+		// Uses the real three-second pause; the abort lands partway through it.
+		const controller = new AbortController();
+		const { fetchImpl, hits } = server(() => {
+			setTimeout(() => controller.abort(), 20);
+			return json(202, ENQUEUED);
+		});
+		const started = Date.now();
+		await expect(
+			getPostTags('did:plc:example', '3exampleabc12', { fetchImpl, signal: controller.signal })
+		).rejects.toThrow();
+		expect(Date.now() - started).toBeLessThan(1000);
+		expect(hits.length).toBe(1);
+	});
+
 	it('rejects a 200 body without an images array with a readable error', async () => {
 		const { fetchImpl } = server(() => json(200, { uri: URI }));
 		await expect(
