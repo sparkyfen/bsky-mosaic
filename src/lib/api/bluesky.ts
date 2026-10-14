@@ -30,6 +30,11 @@ export function isNsfw(labels: string[]): boolean {
 	return labels.some((l) => NSFW_LABELS.has(l));
 }
 
+/** True when an author's labels include Bluesky's "hide my content from logged-out users" self-label. */
+export function hidesFromLoggedOut(labels: unknown): boolean {
+	return Array.isArray(labels) && labels.some((l: any) => l?.val === '!no-unauthenticated');
+}
+
 export interface PhotoPost {
 	uri: string;
 	cid: string;
