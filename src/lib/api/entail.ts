@@ -44,6 +44,9 @@ export interface EntailPostOptions {
 // about five seconds before answering 202, so two attempts give a fresh post
 // roughly ten seconds of classifier time without hammering the queue.
 const POST_ATTEMPTS = 2;
+// entail returns every tag above its 0.3 storage floor by default, which is
+// about 50 per image and noisy; 0.8 keeps the ones worth showing.
+const POST_MIN_CONFIDENCE = '0.8';
 const POST_RETRY_PAUSE_MS = 3000;
 
 /** The modal keys tags by `cid` and slices `tags`, so both have to be there. */
@@ -66,7 +69,12 @@ export async function getPostTags(
 	rkey: string,
 	{ signal, fetchImpl = fetch, pause = sleep }: EntailPostOptions = {}
 ): Promise<EntailPostResult> {
-	const params = new URLSearchParams({ handle, rkey, wait: 'true' });
+	const params = new URLSearchParams({
+		handle,
+		rkey,
+		min_confidence: POST_MIN_CONFIDENCE,
+		wait: 'true'
+	});
 	const url = `${ENTAIL_API}/post?${params.toString()}`;
 
 	for (let attempt = 0; attempt < POST_ATTEMPTS; attempt++) {

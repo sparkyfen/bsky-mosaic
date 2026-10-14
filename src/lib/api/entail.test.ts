@@ -55,6 +55,22 @@ describe('getPostTags', () => {
 		expect(result.post.images[0].tags.map((t) => t.name)).toEqual(['mammal', 'anthro']);
 	});
 
+	it('leaves out tags below 0.8 confidence', async () => {
+		// Like the live API, the fake drops tags below min_confidence and falls
+		// back to the stored 0.3 floor when the parameter is missing.
+		const { fetchImpl } = server((url) => {
+			const floor = Number(url.searchParams.get('min_confidence') ?? 0.3);
+			const tags = [
+				{ name: 'mammal', confidence: 1 },
+				{ name: 'scatplay', confidence: 0.41 }
+			].filter((t) => t.confidence >= floor);
+			return json(200, { ...CLASSIFIED, images: [{ ...CLASSIFIED.images[0], tags }] });
+		});
+		const result = await getPostTags('did:plc:example', '3exampleabc12', { fetchImpl });
+		if (result.status !== 'ready') throw new Error('expected ready');
+		expect(result.post.images[0].tags.map((t) => t.name)).toEqual(['mammal']);
+	});
+
 	it('reports a queued post as pending instead of throwing', async () => {
 		const { fetchImpl } = server(() => json(202, ENQUEUED));
 		const result = await getPostTags('did:plc:example', '3exampleabc12', {
