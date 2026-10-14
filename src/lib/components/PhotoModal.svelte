@@ -58,6 +58,9 @@
 	let tagsByCid = $state<Record<string, EntailImageTags>>({});
 	let tagsLoading = $state(false);
 	let tagsError = $state<string | null>(null);
+	let tagsPending = $state(false);
+	// Bumped by the Try again button to refetch a post entail had queued.
+	let tagsRetry = $state(0);
 	let tagsExpanded = $state(false);
 	const TAG_LIMIT = 15;
 	const currentTags = $derived(image.cid ? tagsByCid[image.cid] : undefined);
@@ -82,7 +85,9 @@
 			? 'Loading…'
 			: tagsError
 				? tagsError
-				: currentTags && currentTags.tags.length > 0
+				: tagsPending
+					? "Tags aren't ready yet."
+					: currentTags && currentTags.tags.length > 0
 					? ''
 					: 'No tags for this image.'
 	);
@@ -94,26 +99,39 @@
 
 	// Fetch reactively: auth (uwu/ageVerified) resolves asynchronously after mount.
 	// Plain (non-$state) on purpose: the guard must not be a tracked dependency.
-	let tagsRequest: { rkey: string } | null = null;
+	let tagsRequest: { rkey: string; retry: number } | null = null;
+	// Aborting stops entail's retry loop for a post the modal has moved past.
+	let tagsController: AbortController | null = null;
+	$effect(() => () => tagsController?.abort());
 	$effect(() => {
 		if (!e621Enabled) {
 			// Re-arm the guard (an e621Enabled false→true toggle refetches) and
 			// invalidate any in-flight request.
+			tagsController?.abort();
 			tagsRequest = null;
 			tagsError = null;
+			tagsPending = false;
 			tagsLoading = false;
 			return;
 		}
-		if (tagsRequest?.rkey === rkey) return;
-		const request = { rkey };
+		if (tagsRequest?.rkey === rkey && tagsRequest.retry === tagsRetry) return;
+		tagsController?.abort();
+		const controller = new AbortController();
+		tagsController = controller;
+		const request = { rkey, retry: tagsRetry };
 		tagsRequest = request;
 		tagsError = null;
+		tagsPending = false;
 		tagsLoading = true;
-		getPostTags(post.author.did, rkey)
+		getPostTags(post.author.did, rkey, { signal: controller.signal })
 			.then((r) => {
 				if (tagsRequest !== request) return; // stale response
+				if (r.status === 'pending') {
+					tagsPending = true;
+					return;
+				}
 				const map: Record<string, EntailImageTags> = {};
-				for (const img of r.images) map[img.cid] = img;
+				for (const img of r.post.images) map[img.cid] = img;
 				tagsByCid = map;
 			})
 			.catch((e) => {
@@ -366,6 +384,11 @@
 					</h3>
 					<div class="tags-body">
 						<p class="tags-status" role="status">{tagsStatus}</p>
+						{#if tagsPending && !tagsLoading}
+							<button class="more-tags" type="button" onclick={() => tagsRetry++}>
+								Try again
+							</button>
+						{/if}
 						{#if !tagsStatus}
 							<ul class="tag-list">
 								{#each visibleTags as tag}

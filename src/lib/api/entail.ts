@@ -23,30 +23,103 @@ export interface EntailImageTags {
 
 export interface EntailPostResponse {
 	uri: string;
-	model_version: string;
+	model_version: string | null;
 	router_model_version: string | null;
+	/** Empty when the router found no furry artwork in the post. */
 	images: EntailImageTags[];
+}
+
+/** `pending` means entail queued the post but hasn't classified it yet. */
+export type EntailPostResult =
+	| { status: 'ready'; post: EntailPostResponse }
+	| { status: 'pending' };
+
+export interface EntailPostOptions {
+	signal?: AbortSignal;
+	fetchImpl?: typeof fetch;
+	pause?: (ms: number, signal?: AbortSignal) => Promise<void>;
+}
+
+// With wait=true, entail holds a request for a post it hasn't classified for
+// about five seconds before answering 202, so two attempts give a fresh post
+// roughly ten seconds of classifier time without hammering the queue.
+const POST_ATTEMPTS = 2;
+const POST_RETRY_PAUSE_MS = 3000;
+// entail returns every tag above its 0.3 storage floor by default, which is
+// about 50 per image and noisy; 0.8 keeps the ones worth showing.
+const POST_MIN_CONFIDENCE = '0.8';
+
+function isTagScore(tag: unknown): boolean {
+	const { name, confidence } = (tag ?? {}) as { name?: unknown; confidence?: unknown };
+	return typeof name === 'string' && typeof confidence === 'number';
+}
+
+/** The modal keys tags by `cid` and renders each tag's name, so those have to
+ * be there and be the right type. */
+function isImageEntry(entry: unknown): boolean {
+	const { cid, tags } = (entry ?? {}) as { cid?: unknown; tags?: unknown };
+	return typeof cid === 'string' && Array.isArray(tags) && tags.every(isTagScore);
+}
+
+/** Resolves after `ms`, or rejects as soon as `signal` aborts. */
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+	return new Promise((resolve, reject) => {
+		if (signal?.aborted) return reject(signal.reason);
+		const timer = setTimeout(() => {
+			signal?.removeEventListener('abort', onAbort);
+			resolve();
+		}, ms);
+		function onAbort() {
+			clearTimeout(timer);
+			reject(signal?.reason);
+		}
+		signal?.addEventListener('abort', onAbort, { once: true });
+	});
 }
 
 /**
  * Forward lookup: given a Bluesky post, return per-image e621 tags with
- * confidence scores. Hits GET /post (formerly /tags). Pass `force` to bypass
- * the furry-artwork router gate and tag every image.
+ * confidence scores. Hits GET /post. A post entail hasn't indexed yet comes
+ * back 202 `{uri, status: "enqueued"}`; that is retried a bounded number of
+ * times and then reported as `pending`. Rejects on HTTP errors, an
+ * unrecognized body, or when `signal` aborts.
  */
 export async function getPostTags(
 	handle: string,
 	rkey: string,
-	force = false
-): Promise<EntailPostResponse> {
-	const params = new URLSearchParams({ handle, rkey });
-	if (force) params.set('force', 'true');
-	const res = await fetch(`${ENTAIL_API}/post?${params.toString()}`);
+	{ signal, fetchImpl = fetch, pause = sleep }: EntailPostOptions = {}
+): Promise<EntailPostResult> {
+	const params = new URLSearchParams({
+		handle,
+		rkey,
+		min_confidence: POST_MIN_CONFIDENCE,
+		wait: 'true'
+	});
+	const url = `${ENTAIL_API}/post?${params.toString()}`;
 
-	if (!res.ok) {
-		throw new Error(`Entail API error ${res.status}`);
+	for (let attempt = 0; attempt < POST_ATTEMPTS; attempt++) {
+		if (attempt > 0) await pause(POST_RETRY_PAUSE_MS, signal);
+		signal?.throwIfAborted();
+		const res = await fetchImpl(url, { signal });
+		signal?.throwIfAborted();
+
+		if (res.status === 202) continue;
+		if (!res.ok) {
+			throw new Error(`Entail API error ${res.status}`);
+		}
+
+		const body = (await res.json()) as Partial<EntailPostResponse> | null;
+		if (
+			typeof body?.uri !== 'string' ||
+			!Array.isArray(body.images) ||
+			!body.images.every(isImageEntry)
+		) {
+			throw new Error('Unexpected response from entail');
+		}
+		return { status: 'ready', post: body as EntailPostResponse };
 	}
 
-	return (await res.json()) as EntailPostResponse;
+	return { status: 'pending' };
 }
 
 export interface EntailSearchMatch {
