@@ -59,6 +59,8 @@
 	let tagsLoading = $state(false);
 	let tagsError = $state<string | null>(null);
 	let tagsPending = $state(false);
+	// Bumped by the Try again button to refetch a post entail had queued.
+	let tagsRetry = $state(0);
 	let tagsExpanded = $state(false);
 	const TAG_LIMIT = 15;
 	const currentTags = $derived(image.cid ? tagsByCid[image.cid] : undefined);
@@ -84,7 +86,7 @@
 			: tagsError
 				? tagsError
 				: tagsPending
-					? "Tags aren't ready yet. Try again in a minute."
+					? "Tags aren't ready yet."
 					: currentTags && currentTags.tags.length > 0
 					? ''
 					: 'No tags for this image.'
@@ -97,7 +99,7 @@
 
 	// Fetch reactively: auth (uwu/ageVerified) resolves asynchronously after mount.
 	// Plain (non-$state) on purpose: the guard must not be a tracked dependency.
-	let tagsRequest: { rkey: string } | null = null;
+	let tagsRequest: { rkey: string; retry: number } | null = null;
 	// Aborting stops entail's retry loop for a post the modal has moved past.
 	let tagsController: AbortController | null = null;
 	$effect(() => () => tagsController?.abort());
@@ -112,11 +114,11 @@
 			tagsLoading = false;
 			return;
 		}
-		if (tagsRequest?.rkey === rkey) return;
+		if (tagsRequest?.rkey === rkey && tagsRequest.retry === tagsRetry) return;
 		tagsController?.abort();
 		const controller = new AbortController();
 		tagsController = controller;
-		const request = { rkey };
+		const request = { rkey, retry: tagsRetry };
 		tagsRequest = request;
 		tagsError = null;
 		tagsPending = false;
@@ -382,6 +384,11 @@
 					</h3>
 					<div class="tags-body">
 						<p class="tags-status" role="status">{tagsStatus}</p>
+						{#if tagsPending && !tagsLoading}
+							<button class="more-tags" type="button" onclick={() => tagsRetry++}>
+								Try again
+							</button>
+						{/if}
 						{#if !tagsStatus}
 							<ul class="tag-list">
 								{#each visibleTags as tag}
