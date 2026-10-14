@@ -46,8 +46,9 @@ export interface EntailPostOptions {
 const POST_ATTEMPTS = 2;
 const POST_RETRY_PAUSE_MS = 3000;
 // entail returns every tag above its 0.3 storage floor by default, which is
-// about 50 per image and noisy; 0.8 keeps the ones worth showing.
-const POST_MIN_CONFIDENCE = '0.8';
+// about 50 per image and noisy; 0.8 keeps the ones worth showing. Search uses
+// the same floor so a post found for a tag also shows that tag in the modal.
+const MIN_CONFIDENCE = '0.8';
 
 function isTagScore(tag: unknown): boolean {
 	const { name, confidence } = (tag ?? {}) as { name?: unknown; confidence?: unknown };
@@ -92,7 +93,7 @@ export async function getPostTags(
 	const params = new URLSearchParams({
 		handle,
 		rkey,
-		min_confidence: POST_MIN_CONFIDENCE,
+		min_confidence: MIN_CONFIDENCE,
 		wait: 'true'
 	});
 	const url = `${ENTAIL_API}/post?${params.toString()}`;
@@ -141,6 +142,7 @@ export interface EntailSearchOptions {
 	limit?: number;
 	/** Opaque pagination cursor from a previous response. */
 	cursor?: string;
+	fetchImpl?: typeof fetch;
 }
 
 /**
@@ -153,12 +155,13 @@ export async function searchByTag(
 	tag: string,
 	opts: EntailSearchOptions = {}
 ): Promise<EntailSearchResponse> {
-	const params = new URLSearchParams({ tag });
+	const params = new URLSearchParams({ tag, min_confidence: MIN_CONFIDENCE });
 	if (opts.rating) params.set('rating', opts.rating);
 	if (opts.limit != null) params.set('limit', String(opts.limit));
 	if (opts.cursor) params.set('cursor', opts.cursor);
 
-	const res = await fetch(`${ENTAIL_API}/search?${params.toString()}`);
+	const { fetchImpl = fetch } = opts;
+	const res = await fetchImpl(`${ENTAIL_API}/search?${params.toString()}`);
 
 	if (!res.ok) {
 		throw new Error(`Entail search error ${res.status}`);

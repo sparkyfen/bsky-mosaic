@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getPostTags } from './entail.js';
+import { getPostTags, searchByTag } from './entail.js';
 
 // Shapes recorded from the live API on 2026-10-14, with identifiers replaced
 // and the tag list trimmed.
@@ -177,5 +177,28 @@ describe('getPostTags', () => {
 		await expect(
 			getPostTags('did:plc:example', '3exampleabc12', { fetchImpl })
 		).rejects.toThrow(/503/);
+	});
+});
+
+describe('searchByTag', () => {
+	it('leaves out matches below 0.8 confidence, like the photo modal', async () => {
+		// Like the live API, the fake drops matches below min_confidence and
+		// falls back to the stored 0.3 floor when the parameter is missing.
+		const match = (rkey: string, confidence: number) => ({
+			uri: `at://did:plc:example/app.bsky.feed.post/${rkey}`,
+			cid: `bafkrei${rkey}`,
+			rating: 'safe',
+			confidence,
+			indexed_at: '2026-10-14T07:24:57.495823Z'
+		});
+		const { fetchImpl } = server((url) => {
+			const floor = Number(url.searchParams.get('min_confidence') ?? 0.3);
+			const matches = [match('strong', 0.93), match('weak', 0.59)].filter(
+				(m) => m.confidence >= floor
+			);
+			return json(200, { matches, cursor: null });
+		});
+		const result = await searchByTag('wolf', { fetchImpl });
+		expect(result.matches.map((m) => m.cid)).toEqual(['bafkreistrong']);
 	});
 });
