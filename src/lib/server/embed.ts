@@ -1,4 +1,5 @@
 import { BskyAgent } from '@atproto/api';
+import { hidesFromLoggedOut } from '$lib/api/bluesky.js';
 
 const PUBLIC_API = 'https://public.api.bsky.app';
 const SITE_NAME = 'tiles.blue';
@@ -120,6 +121,9 @@ export async function buildProfileEmbed(handle: string, url: string): Promise<st
 	const agent = serverAgent();
 	const profileRes = await agent.getProfile({ actor: handle });
 	const profile = profileRes.data;
+	// Crawlers are logged out, so for authors who hide their content from
+	// logged-out viewers, hooks.server.ts falls through to the generic page.
+	if (hidesFromLoggedOut(profile.labels)) throw new Error('Author hides their content from logged-out viewers');
 
 	const images: EmbedImage[] = profile.avatar ? [{ url: profile.avatar }] : [];
 
@@ -136,6 +140,7 @@ export async function buildProfileEmbed(handle: string, url: string): Promise<st
 export async function buildPostEmbed(handle: string, rkey: string, url: string): Promise<string> {
 	const agent = serverAgent();
 	const profileRes = await agent.getProfile({ actor: handle });
+	if (hidesFromLoggedOut(profileRes.data.labels)) throw new Error('Author hides their content from logged-out viewers');
 	const uri = `at://${profileRes.data.did}/app.bsky.feed.post/${rkey}`;
 	const threadRes = await agent.getPostThread({ uri, depth: 0 });
 
@@ -144,6 +149,7 @@ export async function buildPostEmbed(handle: string, rkey: string, url: string):
 		throw new Error('Post not found');
 	}
 	const post = thread.post;
+	if (hidesFromLoggedOut(post.author?.labels)) throw new Error('Author hides their content from logged-out viewers');
 	const images = extractImages(post.embed);
 
 	let embedImages: EmbedImage[] = images;

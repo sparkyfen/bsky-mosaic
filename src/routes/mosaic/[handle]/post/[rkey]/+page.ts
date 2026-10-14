@@ -1,11 +1,13 @@
 import { error } from '@sveltejs/kit';
-import { createAgent, extractImageCids, type PhotoImage, type PhotoPost } from '$lib/api/bluesky.js';
+import { createAgent, hidesFromLoggedOut, postViewToPhotoPost } from '$lib/api/bluesky.js';
+import { getAuthenticatedAgent } from '$lib/stores/auth.js';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ params }) => {
 	const handle = decodeURIComponent(params.handle);
 	const rkey = params.rkey;
-	const agent = createAgent();
+	// Same agent choice as the mosaic page: the viewer's session when signed in.
+	const agent = getAuthenticatedAgent() || createAgent();
 
 	let profileRes;
 	try {
@@ -29,55 +31,26 @@ export const load: PageLoad = async ({ params }) => {
 	}
 
 	const p = thread.post;
-	const embed = p.embed;
-	const images: PhotoImage[] = [];
-	const recordCids = extractImageCids(p.record);
-
-	if (embed?.$type === 'app.bsky.embed.images#view') {
-		(embed as any).images.forEach((img: any, idx: number) => {
-			images.push({
-				cid: recordCids[idx] ?? '',
-				thumb: img.thumb,
-				fullsize: img.fullsize,
-				alt: img.alt || '',
-				aspectRatio: img.aspectRatio
-			});
-		});
-	} else if (embed?.$type === 'app.bsky.embed.recordWithMedia#view') {
-		const media = (embed as any).media;
-		if (media?.$type === 'app.bsky.embed.images#view') {
-			media.images.forEach((img: any, idx: number) => {
-				images.push({
-					cid: recordCids[idx] ?? '',
-					thumb: img.thumb,
-					fullsize: img.fullsize,
-					alt: img.alt || '',
-					aspectRatio: img.aspectRatio
-				});
-			});
-		}
+	// Checked here as well as in postViewToPhotoPost so the page can tell this
+	// case apart from a post with no images, and so a viewer who logs out
+	// stops seeing a post that was loaded while they were signed in.
+	const requiresAuth = hidesFromLoggedOut(profileRes.data.labels) || hidesFromLoggedOut(p.author?.labels);
+	const isAuthenticated = !!agent.session;
+	// The account this load fetched as, so the page can reload after an
+	// account switch.
+	const viewer: string | null = agent.session?.did ?? null;
+	// The resolved handle, so a DID in the URL still reads as a handle. Bluesky
+	// reports unverified handles as handle.invalid, which doesn't route, so
+	// keep the URL's value then.
+	const authorHandle = profileRes.data.handle === 'handle.invalid' ? handle : profileRes.data.handle;
+	if (requiresAuth && !isAuthenticated) {
+		return { post: null, requiresAuth, handle: authorHandle, viewer };
 	}
 
-	if (images.length === 0) {
+	const post = postViewToPhotoPost(p, false, isAuthenticated);
+	if (!post) {
 		throw error(404, 'Post has no images');
 	}
 
-	const post: PhotoPost = {
-		uri: p.uri,
-		cid: p.cid,
-		author: {
-			did: p.author.did,
-			handle: p.author.handle,
-			displayName: p.author.displayName,
-			avatar: p.author.avatar
-		},
-		images,
-		indexedAt: p.indexedAt,
-		parentChain: [],
-		isRepost: false,
-		labels: (p.labels || []).map((l: any) => l.val).filter(Boolean),
-		nsfw: false
-	};
-
-	return { post, handle };
+	return { post, requiresAuth, handle: authorHandle, viewer };
 };

@@ -34,8 +34,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 			return htmlResponse(await buildProfileEmbed(bskyHandle, href));
 		}
 	} catch {
-		// Fall through to the real app on any fetch failure — the layout's
-		// static OG tags will still give the crawler something to render.
+		// Fall through to the real app on any fetch failure, or when the author
+		// hides their content from logged-out viewers. The layout's static OG
+		// tags still give the crawler something to render.
 	}
 
 	// Non-embeddable routes (/, /profile, legal pages, etc.) — let SvelteKit
