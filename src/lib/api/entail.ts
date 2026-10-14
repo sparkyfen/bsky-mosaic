@@ -23,30 +23,65 @@ export interface EntailImageTags {
 
 export interface EntailPostResponse {
 	uri: string;
-	model_version: string;
+	model_version: string | null;
 	router_model_version: string | null;
+	/** Empty when the router found no furry artwork in the post. */
 	images: EntailImageTags[];
 }
 
+/** `pending` means entail queued the post but hasn't classified it yet. */
+export type EntailPostResult =
+	| { status: 'ready'; post: EntailPostResponse }
+	| { status: 'pending' };
+
+export interface EntailPostOptions {
+	signal?: AbortSignal;
+	fetchImpl?: typeof fetch;
+	pause?: (ms: number) => Promise<void>;
+}
+
+// With wait=true, entail holds a request for a post it hasn't classified for
+// about five seconds before answering 202, so two attempts give a fresh post
+// roughly ten seconds of classifier time without hammering the queue.
+const POST_ATTEMPTS = 2;
+const POST_RETRY_PAUSE_MS = 3000;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 /**
  * Forward lookup: given a Bluesky post, return per-image e621 tags with
- * confidence scores. Hits GET /post (formerly /tags). Pass `force` to bypass
- * the furry-artwork router gate and tag every image.
+ * confidence scores. Hits GET /post. A post entail hasn't indexed yet comes
+ * back 202 `{uri, status: "enqueued"}`; that is retried a bounded number of
+ * times and then reported as `pending`. Rejects on HTTP errors, an
+ * unrecognized body, or when `signal` aborts.
  */
 export async function getPostTags(
 	handle: string,
 	rkey: string,
-	force = false
-): Promise<EntailPostResponse> {
-	const params = new URLSearchParams({ handle, rkey });
-	if (force) params.set('force', 'true');
-	const res = await fetch(`${ENTAIL_API}/post?${params.toString()}`);
+	{ signal, fetchImpl = fetch, pause = sleep }: EntailPostOptions = {}
+): Promise<EntailPostResult> {
+	const params = new URLSearchParams({ handle, rkey, wait: 'true' });
+	const url = `${ENTAIL_API}/post?${params.toString()}`;
 
-	if (!res.ok) {
-		throw new Error(`Entail API error ${res.status}`);
+	for (let attempt = 0; attempt < POST_ATTEMPTS; attempt++) {
+		if (attempt > 0) await pause(POST_RETRY_PAUSE_MS);
+		signal?.throwIfAborted();
+		const res = await fetchImpl(url, { signal });
+		signal?.throwIfAborted();
+
+		if (res.status === 202) continue;
+		if (!res.ok) {
+			throw new Error(`Entail API error ${res.status}`);
+		}
+
+		const body = (await res.json()) as Partial<EntailPostResponse> | null;
+		if (!Array.isArray(body?.images)) {
+			throw new Error('Unexpected response from entail');
+		}
+		return { status: 'ready', post: body as EntailPostResponse };
 	}
 
-	return (await res.json()) as EntailPostResponse;
+	return { status: 'pending' };
 }
 
 export interface EntailSearchMatch {
