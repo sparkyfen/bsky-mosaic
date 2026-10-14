@@ -143,6 +143,20 @@ describe('getPostTags', () => {
 		}
 	});
 
+	it('rejects a malformed tag or a post without a uri', async () => {
+		const image = CLASSIFIED.images[0];
+		for (const body of [
+			{ ...CLASSIFIED, images: [{ ...image, tags: [{ name: 42, confidence: 1 }] }] },
+			{ ...CLASSIFIED, images: [{ ...image, tags: [{ name: 'mammal' }] }] },
+			{ ...CLASSIFIED, uri: undefined }
+		]) {
+			const { fetchImpl } = server(() => json(200, body));
+			await expect(
+				getPostTags('did:plc:example', '3exampleabc12', { fetchImpl })
+			).rejects.toThrow(/unexpected/i);
+		}
+	});
+
 	it('rejects on an HTTP error', async () => {
 		const { fetchImpl } = server(() => json(503, { error: 'Database unavailable' }));
 		await expect(

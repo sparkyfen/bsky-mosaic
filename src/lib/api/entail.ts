@@ -44,15 +44,21 @@ export interface EntailPostOptions {
 // about five seconds before answering 202, so two attempts give a fresh post
 // roughly ten seconds of classifier time without hammering the queue.
 const POST_ATTEMPTS = 2;
+const POST_RETRY_PAUSE_MS = 3000;
 // entail returns every tag above its 0.3 storage floor by default, which is
 // about 50 per image and noisy; 0.8 keeps the ones worth showing.
 const POST_MIN_CONFIDENCE = '0.8';
-const POST_RETRY_PAUSE_MS = 3000;
 
-/** The modal keys tags by `cid` and slices `tags`, so both have to be there. */
+function isTagScore(tag: unknown): boolean {
+	const { name, confidence } = (tag ?? {}) as { name?: unknown; confidence?: unknown };
+	return typeof name === 'string' && typeof confidence === 'number';
+}
+
+/** The modal keys tags by `cid` and renders each tag's name, so those have to
+ * be there and be the right type. */
 function isImageEntry(entry: unknown): boolean {
 	const { cid, tags } = (entry ?? {}) as { cid?: unknown; tags?: unknown };
-	return typeof cid === 'string' && Array.isArray(tags);
+	return typeof cid === 'string' && Array.isArray(tags) && tags.every(isTagScore);
 }
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -89,7 +95,11 @@ export async function getPostTags(
 		}
 
 		const body = (await res.json()) as Partial<EntailPostResponse> | null;
-		if (!Array.isArray(body?.images) || !body.images.every(isImageEntry)) {
+		if (
+			typeof body?.uri !== 'string' ||
+			!Array.isArray(body.images) ||
+			!body.images.every(isImageEntry)
+		) {
 			throw new Error('Unexpected response from entail');
 		}
 		return { status: 'ready', post: body as EntailPostResponse };
